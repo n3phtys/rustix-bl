@@ -2,9 +2,16 @@
 #![allow(dead_code)]
 
 #[macro_use] extern crate derive_builder;
+extern crate serde;
+extern crate serde_json;
+
+#[macro_use]
+extern crate serde_derive;
 
 mod itemstorage;
 mod left_threaded_avl_tree;
+mod event_source_persistence;
+mod datastore;
 
 #[derive(Default, Builder, Debug)]
 #[builder(setter(into))]
