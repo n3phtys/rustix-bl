@@ -95,7 +95,7 @@ mod tests {
     }
     #[test]
     fn basic_adding_works() {
-        let mut tree = ScoredIdTreeMock::default();
+        let mut tree = ScoredIdTreeMock::empty();
         assert!(tree.insert(1));
         assert!(!tree.insert(1));
         assert!(tree.insert(2));
