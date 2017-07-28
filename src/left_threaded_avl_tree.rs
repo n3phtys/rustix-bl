@@ -4,8 +4,9 @@
 
 
 use std::collections::HashMap;
+use std::cmp;
 
-trait AVLTree {
+pub trait AVLTree {
     fn empty() -> Self;
     fn insert(&mut self, id: u32) -> bool;
     fn increment_by_one(&mut self, id: u32) -> Option<u32>; // returns score if successful
@@ -14,14 +15,14 @@ trait AVLTree {
 }
 
 #[derive(Default, Builder, Debug)]
-struct ScoredIdTreeMock {
+pub struct ScoredIdTreeMock {
     ids: Vec<u32>, //just to mock it
     scores: Vec<u32>//just to mock it
 }
 
 impl ScoredIdTreeMock {
     fn index_of(&self, id: u32) -> Option<usize> {
-        for i in 0..self.ids.len() {
+        for i in 0..(self.ids.len() - 1) {
             if self.ids[i] == id {
               return Some(i);
             }
@@ -31,13 +32,12 @@ impl ScoredIdTreeMock {
 
     fn score_sorted_copy(&self) -> Vec<u32> {
         let mut hashmap : HashMap<u32,u32> = HashMap::new();
-        for i in 0..self.ids.len() {
+        for i in 0..(self.ids.len()-1) {
             hashmap.insert(self.ids[i], self.scores[i]);
         }
         let hm = &*(&mut hashmap);
-        println!("getting:{:?}", hm);
-        let cmp = |a: &u32, b: &u32|a.cmp(b);
-        let mut x : Vec<u32> = self.scores.to_vec();
+        let cmp = |a: &u32, b: &u32|hm.get(b).unwrap_or(&0u32).cmp(hm.get(a).unwrap_or(&0u32));
+        let mut x : Vec<u32> = self.ids.to_vec();
         x.sort_by(cmp);
         return x;
     }
@@ -77,13 +77,17 @@ impl AVLTree for ScoredIdTreeMock {
     }
 
     fn extract_top(&self, n: usize) -> Vec<u32> {
-        return self.score_sorted_copy()[0..n].to_vec();
+        let n : usize = cmp::min(n, self.ids.len());
+        //println!("Extracting {:?} from {:?}", n, self);
+        return self.score_sorted_copy()[0..(n)].to_vec();
     }
 }
 
 #[cfg(test)]
 mod tests {
 
+    use left_threaded_avl_tree::ScoredIdTreeMock;
+    use left_threaded_avl_tree::AVLTree;
 
     #[test]
     fn always_works() {
@@ -91,10 +95,48 @@ mod tests {
     }
     #[test]
     fn basic_adding_works() {
-
+        let mut tree = ScoredIdTreeMock::default();
+        assert!(tree.insert(1));
+        assert!(!tree.insert(1));
+        assert!(tree.insert(2));
+        assert!(!tree.insert(1));
+        assert!(tree.insert(3));
+        assert_eq!(tree.increment_by_one(2).unwrap(), 1);
+        assert_eq!(tree.increment_by_one(2).unwrap(), 2);
+        assert_eq!(tree.increment_by_one(2).unwrap(), 3);
+        assert_eq!(tree.increment_by_one(1).unwrap(), 1);
+        assert!(tree.increment_by_one(0).is_none());
+        let out = tree.extract_top(3);
+        assert_eq!(tree.ids.len(), 3);
+        assert_eq!(tree.scores.len(), 3);
+        assert_eq!(out.len(), 3);
+        assert_eq!(out[0], 2);
+        assert_eq!(out[1], 1);
+        assert_eq!(out[2], 3);
     }
     #[test]
     fn basic_removal_works() {
+
+        let mut tree = ScoredIdTreeMock::default();
+        tree.insert(1);
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(1);
+        tree.insert(3);
+        tree.increment_by_one(2);
+        tree.increment_by_one(2);
+        tree.increment_by_one(1);
+        tree.increment_by_one(1);
+        tree.increment_by_one(1);
+        tree.increment_by_one(0);
+        tree.increment_by_one(1);
+        assert_eq!(tree.remove(2).unwrap(), 2);
+        assert_eq!(tree.remove(2).is_none(), true);
+        assert_eq!(tree.remove(1).unwrap(), 4);
+        let out = tree.extract_top(3);
+        assert_eq!(tree.ids.len(), 1);
+        assert_eq!(tree.scores.len(), 1);
+        assert_eq!(out.len(), 1);
 
     }
 }
