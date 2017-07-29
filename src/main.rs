@@ -70,20 +70,16 @@ mod ldmbtest {
         let mut rw_transaction: RwTransaction = RwTransaction::new(env).unwrap();
         let tx_flags: WriteFlags = WriteFlags::empty();
         for i in 1..100 {
+            let key1 = transform_u32_to_array_of_u8(0u32 + i);
+            let data1 = transform_abc_to_array_of_u8(96u8 + i as u8);
+            let result = rw_transaction.put(db, &key1, &data1, tx_flags );
 
         }
-        let key1 = transform_u32_to_array_of_u8(1u32);
-        let key2 = transform_u32_to_array_of_u8(2u32);
-        let data1 = transform_abc_to_array_of_u8(97);
-        let data2 = transform_abc_to_array_of_u8(97);
-        let result = rw_transaction.put(db, &key1, &data2, tx_flags );
-        let result = rw_transaction.put(db, &key2, &data2, tx_flags );
         rw_transaction.commit().unwrap();
 
         let raw_ro_transaction = RoTransaction::new(env).unwrap();
         {
             let mut read_transaction: RoCursor = RoCursor::new(&raw_ro_transaction, db).unwrap();
-            println!("{:?}", read_transaction.get(Some(&key1), None, 0u32).unwrap());
 
             for value in read_transaction.iter_start() {
                 println!("{:?}", value);
