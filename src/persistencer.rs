@@ -47,23 +47,26 @@ quick_error! {
 
 
 impl std::convert::From<errors::custom_errors::CustomRustixFrontendError> for RustixError {
-    fn from(_: errors::custom_errors::CustomRustixFrontendError) -> Self {
-        unimplemented!()
+    fn from(e: errors::custom_errors::CustomRustixFrontendError) -> Self {
+        return RustixError::Init(e);
     }
 }
+
 impl std::convert::From<Error_JSON> for RustixError {
-    fn from(_: Error_JSON) -> Self {
-        unimplemented!()
+    fn from(e: Error_JSON) -> Self {
+        return RustixError::SerialJson(e);
     }
 }
+
 impl std::convert::From<std::str::Utf8Error> for RustixError {
-    fn from(_: std::str::Utf8Error) -> Self {
-        unimplemented!()
+    fn from(e: std::str::Utf8Error) -> Self {
+        return RustixError::SerialUTF8(e);
     }
 }
+
 impl std::convert::From<Error_LMDB> for RustixError {
-    fn from(_: Error_LMDB) -> Self {
-        unimplemented!()
+    fn from(e: Error_LMDB) -> Self {
+        return RustixError::DB(e);
     }
 }
 
@@ -87,12 +90,12 @@ pub trait LMDBPersistencer {
     fn get_counter(&self) -> u32;
 }
 
-fn transform_u32_to_array_of_u8(x:u32) -> [u8;4] {
-    let b1 : u8 = ((x >> 24) & 0xff) as u8;
-    let b2 : u8 = ((x >> 16) & 0xff) as u8;
-    let b3 : u8 = ((x >> 8) & 0xff) as u8;
-    let b4 : u8 = (x & 0xff) as u8;
-    return [b1, b2, b3, b4]
+fn transform_u32_to_array_of_u8(x: u32) -> [u8; 4] {
+    let b1: u8 = ((x >> 24) & 0xff) as u8;
+    let b2: u8 = ((x >> 16) & 0xff) as u8;
+    let b3: u8 = ((x >> 8) & 0xff) as u8;
+    let b4: u8 = (x & 0xff) as u8;
+    return [b1, b2, b3, b4];
 }
 
 impl LMDBPersistencer for FilePersister {
@@ -113,7 +116,7 @@ impl LMDBPersistencer for FilePersister {
         self.events_stored = self.events_stored + 1;
     }
     fn get_counter(&self) -> u32 {
-        unimplemented!()
+        return self.events_stored;
     }
 }
 
@@ -121,7 +124,7 @@ impl Persistencer for FilePersister {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
         let allowed = event.can_be_applied(datastore);
         if allowed {
-            let id : u32 = self.get_counter() + 1u32;
+            let id: u32 = self.get_counter() + 1u32;
             match self.store_event_in_db(id, event) {
                 Err(e) => return false,
                 Ok(t) => {
@@ -158,17 +161,4 @@ impl Persistencer for FilePersister {
 
         return Ok(counter);
     }
-
-    /*fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
-        self.db_env = Some(try!(Environment::new().open(self.config.database_filepath.as_ref())));
-        self.db = Some(
-            try!(
-                try!(
-                    self.get_env())
-                    .create_db(Some("rustix_events")
-                               , DatabaseFlags::empty())));
-        let counter = try!(self.reload_from_filepath(datastore));
-        self.events_stored = counter;
-        return Ok(counter);
-    }*/
 }
