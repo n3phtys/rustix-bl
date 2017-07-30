@@ -16,9 +16,7 @@ extern crate bincode;
 
 
 
-mod itemstorage;
 mod left_threaded_avl_tree;
-mod event_source_persistence;
 mod datastore;
 
 mod rustix_backend;
@@ -43,7 +41,7 @@ struct Channel {
 fn main() {
     println!("Hello, world!");
 
-    itemstorage::test();
+    datastore::test();
 
     // builder pattern, go, go, go!...
     let ch = ChannelBuilder::default()
