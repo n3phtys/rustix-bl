@@ -8,9 +8,10 @@ extern crate serde;
 extern crate serde_json;
 extern crate lmdb;
 
-#[macro_use]
-extern crate serde_derive;
+#[macro_use] extern crate serde_derive;
 extern crate bincode;
+
+#[macro_use] extern crate quick_error;
 
 
 
@@ -19,6 +20,14 @@ mod itemstorage;
 mod left_threaded_avl_tree;
 mod event_source_persistence;
 mod datastore;
+
+mod rustix_backend;
+
+mod persistencer;
+
+mod rustix_event_shop;
+
+mod config;
 
 #[derive(Default, Builder, Debug)]
 #[builder(setter(into))]

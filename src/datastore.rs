@@ -1,4 +1,4 @@
-
+//TODO: finish declaring datastore attributes and functions (mainly getters!)
 
 pub struct Datastore {
         // keeps hashmap of user_id => user
