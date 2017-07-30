@@ -24,6 +24,7 @@ use serde_json;
 use std;
 use std::error::Error;
 use std::fmt;
+use errors;
 
 quick_error! {
     #[derive(Debug)]
@@ -34,6 +35,8 @@ quick_error! {
         SerialJson(err: Error_JSON) {}
         /// Utf8 Error
         SerialUTF8(err: std::str::Utf8Error) {}
+        /// My own Error
+        Init(err: errors::custom_errors::CustomRustixFrontendError) {}
         ///other Error
         Other(err: Box<std::error::Error>) {
             cause(&**err)
@@ -43,22 +46,24 @@ quick_error! {
 }
 
 
-
-
-#[derive(Debug)]
-pub struct CustomRustixError {
-    err: String,
-}
-
-impl Error for CustomRustixError {
-    fn description(&self) -> &str {
-        "Something bad happened"
+impl std::convert::From<errors::custom_errors::CustomRustixFrontendError> for RustixError {
+    fn from(_: errors::custom_errors::CustomRustixFrontendError) -> Self {
+        unimplemented!()
     }
 }
-
-impl fmt::Display for CustomRustixError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Oh no, something bad went down")
+impl std::convert::From<Error_JSON> for RustixError {
+    fn from(_: Error_JSON) -> Self {
+        unimplemented!()
+    }
+}
+impl std::convert::From<std::str::Utf8Error> for RustixError {
+    fn from(_: std::str::Utf8Error) -> Self {
+        unimplemented!()
+    }
+}
+impl std::convert::From<Error_LMDB> for RustixError {
+    fn from(_: Error_LMDB) -> Self {
+        unimplemented!()
     }
 }
 
@@ -66,40 +71,49 @@ impl fmt::Display for CustomRustixError {
 pub trait Persistencer {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool;
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>; //returns number of events loaded
-    fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
+    //fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
 }
 
 pub struct FilePersister {
     pub config: StaticConfig,
-    db: Option<lmdb::Database>,
-    db_env: Option<lmdb::Environment>,
+    db: lmdb::Database,
+    db_env: lmdb::Environment,
     events_stored: u32,
 }
 
 pub trait LMDBPersistencer {
-    fn store_event_in_db(&mut self, event: &BLEvents) -> Result<(), RustixError>;
-    fn get_env(&self) -> Result<&lmdb::Environment, RustixError>;
-    fn get_db(&self) -> Result<lmdb::Database, RustixError>;
+    fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError>;
+    fn increment_counter(&mut self) -> ();
+    fn get_counter(&self) -> u32;
+}
+
+fn transform_u32_to_array_of_u8(x:u32) -> [u8;4] {
+    let b1 : u8 = ((x >> 24) & 0xff) as u8;
+    let b2 : u8 = ((x >> 16) & 0xff) as u8;
+    let b3 : u8 = ((x >> 8) & 0xff) as u8;
+    let b4 : u8 = (x & 0xff) as u8;
+    return [b1, b2, b3, b4]
 }
 
 impl LMDBPersistencer for FilePersister {
-    fn store_event_in_db(&mut self, event: &BLEvents) -> Result<(), RustixError> {
-        let mut rw_transaction: RwTransaction = try!(RwTransaction::new(&try!(self.db_env.ok_or(CustomRustixError{err:"LMDB Environment not initialized".to_string()}))));
-        let tx_flags: WriteFlags = WriteFlags::empty();
-        let key = unimplemented!();
-        let data = try!(serde_json::to_string(event));
-        let result = rw_transaction.put(self.get_db()?, &key, &data, tx_flags );
-        try!(rw_transaction.commit());
+    fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError> {
+        {
+            let mut rw_transaction: RwTransaction = try!(RwTransaction::new(&self.db_env));
+            let tx_flags: WriteFlags = WriteFlags::empty();
+            let key = transform_u32_to_array_of_u8(id);
+            let data = try!(serde_json::to_string(event));
+            let result = rw_transaction.put(self.db, &key, &data, tx_flags);
+            try!(rw_transaction.commit());
+        }
+        return Ok(self.increment_counter());
     }
 
 
-    fn get_env(&self) -> Result<&lmdb::Environment, RustixError> {
-        let environment: lmdb::Environment = try!(self.db_env.ok_or(CustomRustixError{err:"LMDB Environment not initialized".to_string()}));
-        return Ok(&environment);
+    fn increment_counter(&mut self) -> () {
+        self.events_stored = self.events_stored + 1;
     }
-
-    fn get_db(&self) -> Result<lmdb::Database, RustixError> {
-       return Ok(try!(self.db.ok_or(CustomRustixError{err: "LMDB Database not initialized".to_string()})));
+    fn get_counter(&self) -> u32 {
+        unimplemented!()
     }
 }
 
@@ -107,9 +121,14 @@ impl Persistencer for FilePersister {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
         let allowed = event.can_be_applied(datastore);
         if allowed {
-            self.store_event_in_db(event);
-            event.apply(datastore);
-            return true;
+            let id : u32 = self.get_counter() + 1u32;
+            match self.store_event_in_db(id, event) {
+                Err(e) => return false,
+                Ok(t) => {
+                    event.apply(datastore);
+                    return true;
+                }
+            }
         } else {
             return false;
         }
@@ -117,36 +136,30 @@ impl Persistencer for FilePersister {
 
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
         let mut counter = 0u32;
-        match self.db_env {
-            None => return Err(CustomRustixError{err: "LMDB Environment not initialized".to_string()}),
-            Some(env) => {
-                match self.db {
-                    None => return Err(CustomRustixError{err: "LMDB Database not initialized".to_string()}),
-                    Some(db) => {
-                        let raw_ro_transaction = try!(RoTransaction::new(&env));
-                        {
-                            let mut read_transaction: RoCursor = try!(RoCursor::new(&raw_ro_transaction, db));
+        let env = &self.db_env;
+        let db = self.db;
+        let raw_ro_transaction = try!(RoTransaction::new(&env));
+        {
+            let mut read_transaction: RoCursor = try!(RoCursor::new(&raw_ro_transaction, db));
 
-                            for keyvalue in read_transaction.iter_start() {
-                                let (key, value) = keyvalue;
-                                let json = try!(str::from_utf8(value));
-                                println!("{:?}", json);
-                                let event: BLEvents = try!(serde_json::from_str(json));
-                                if event.can_be_applied(datastore) {
-                                    event.apply(datastore);
-                                    counter = counter + 1u32;
-                                }
-                            }
-                        }
-                        try!(raw_ro_transaction.commit());
-                    }
+            for keyvalue in read_transaction.iter_start() {
+                let (key, value) = keyvalue;
+                let json = try!(str::from_utf8(value));
+                println!("{:?}", json);
+                let event: BLEvents = try!(serde_json::from_str(json));
+                if event.can_be_applied(datastore) {
+                    event.apply(datastore);
+                    counter = counter + 1u32;
                 }
             }
         }
+        try!(raw_ro_transaction.commit());
+
+
         return Ok(counter);
     }
 
-    fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
+    /*fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
         self.db_env = Some(try!(Environment::new().open(self.config.database_filepath.as_ref())));
         self.db = Some(
             try!(
@@ -157,5 +170,5 @@ impl Persistencer for FilePersister {
         let counter = try!(self.reload_from_filepath(datastore));
         self.events_stored = counter;
         return Ok(counter);
-    }
+    }*/
 }

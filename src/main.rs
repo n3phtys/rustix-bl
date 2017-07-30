@@ -27,6 +27,8 @@ mod persistencer;
 
 mod rustix_event_shop;
 
+mod errors;
+
 mod config;
 
 #[derive(Default, Builder, Debug)]
