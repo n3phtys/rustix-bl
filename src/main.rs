@@ -10,6 +10,10 @@ extern crate lmdb;
 
 #[macro_use]
 extern crate serde_derive;
+extern crate bincode;
+
+
+
 
 mod itemstorage;
 mod left_threaded_avl_tree;
@@ -56,9 +60,14 @@ mod ldmbtest {
     use lmdb::RoTransaction;
     use lmdb::RoCursor;
     use lmdb::WriteFlags;
+    use std::str;
     use std::path::Path;
     use lmdb::Cursor;
     use lmdb::Transaction;
+    use std::marker::Sized;
+    use std::convert::AsRef;
+    use bincode::{serialize, deserialize, Infinite};
+    use serde_json;
 
     pub fn write_to_lmdb() {
         let path = Path::new("target");
@@ -71,22 +80,35 @@ mod ldmbtest {
         let tx_flags: WriteFlags = WriteFlags::empty();
         for i in 1..100 {
             let key1 = transform_u32_to_array_of_u8(0u32 + i);
-            let data1 = transform_abc_to_array_of_u8(96u8 + i as u8);
+            let data1 = transform_abc_to_array_of_u8(((i as u8) % (122u8 - 65u8) + 65u8) as u8);
             let result = rw_transaction.put(db, &key1, &data1, tx_flags );
 
         }
+        let datajson = serde_json::to_string(&Data::A {astr: "abc".to_string(),  bstr: "def".to_string()}).unwrap();
+        let result = rw_transaction.put(db, &transform_u32_to_array_of_u8(0u32 + 101), &datajson, tx_flags );
         rw_transaction.commit().unwrap();
 
         let raw_ro_transaction = RoTransaction::new(env).unwrap();
         {
             let mut read_transaction: RoCursor = RoCursor::new(&raw_ro_transaction, db).unwrap();
 
-            for value in read_transaction.iter_start() {
-                println!("{:?}", value);
+            for keyvalue in read_transaction.iter_start() {
+                let (key, value) = keyvalue;
+                let string = str::from_utf8(value).unwrap();
+                println!("{:?}", string);
             }
         }
         raw_ro_transaction.commit().unwrap();
     }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    enum Data {
+        A{astr: String, bstr: String},
+        B{astr: String, bstr: String},
+        C{i: u32},
+        D,
+    }
+
 
     fn transform_u32_to_array_of_u8(x:u32) -> [u8;4] {
         let b1 : u8 = ((x >> 24) & 0xff) as u8;
