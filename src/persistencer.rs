@@ -84,6 +84,34 @@ pub struct FilePersister {
     events_stored: u32,
 }
 
+pub struct TransientPersister{
+    events_stored: u32
+}
+
+impl LMDBPersistencer for TransientPersister {
+    fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError> {
+        unimplemented!()
+    }
+
+    fn increment_counter(&mut self) -> () {
+        unimplemented!()
+    }
+
+    fn get_counter(&self) -> u32 {
+        unimplemented!()
+    }
+}
+
+impl Persistencer for TransientPersister {
+    fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
+        unimplemented!()
+    }
+
+    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
+        unimplemented!()
+    }
+}
+
 pub trait LMDBPersistencer {
     fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError>;
     fn increment_counter(&mut self) -> ();

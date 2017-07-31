@@ -4,6 +4,7 @@
 #![allow(unused_variables)]
 
 use datastore::Datastore;
+use datastore::UserGroup;
 
 use serde_json;
 use std;
@@ -17,12 +18,14 @@ pub trait Event {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum BLEvents {
-    CreateItem{itemname: String, price_euros: u8, price_cents: u8,},
+    CreateItem{itemname: String, price_cents: u32, category: Option<String>},
     CreateUser{username: String},
     DeleteItem{item_id: u32},
     DeleteUser{user_id: u32},
     MakeSimplePurchase{user_id: u32, item_id: u32, timestamp: u32},
+    CreateBill{timestamp: u32, user_ids: UserGroup, comment: String},
 }
+
 
 
 impl Event for BLEvents {
@@ -51,8 +54,8 @@ mod tests {
     #[test]
     fn events_serialize_and_deserialize_raw() {
         let v = vec![
-            BLEvents::CreateItem {itemname: "beer".to_string(), price_euros : 0u8, price_cents: 95u8,},
-            BLEvents::CreateItem {itemname: "beer 2".to_string(), price_euros : 0u8, price_cents: 95u8,},
+            BLEvents::CreateItem {itemname: "beer".to_string(), price_cents: 95u32, category: None},
+            BLEvents::CreateItem {itemname: "beer 2".to_string(), price_cents: 95u32, category: None},
             BLEvents::DeleteItem {item_id: 2u32,},
             BLEvents::CreateUser {username: "klaus".to_string(),},
             BLEvents::MakeSimplePurchase {item_id: 1u32, user_id: 1u32,timestamp: 123456789u32,}
@@ -69,8 +72,8 @@ mod tests {
     #[test]
     fn events_serialize_and_deserialize_packed() {
         let v = vec![
-            BLEvents::CreateItem {itemname: "beer".to_string(), price_euros : 0u8, price_cents: 95u8,},
-            BLEvents::CreateItem {itemname: "beer 2".to_string(), price_euros : 0u8, price_cents: 95u8,},
+            BLEvents::CreateItem {itemname: "beer".to_string(), price_cents: 95u32, category: None,},
+            BLEvents::CreateItem {itemname: "beer 2".to_string(), price_cents: 95u32, category: None,},
             BLEvents::DeleteItem {item_id: 2u32,},
             BLEvents::CreateUser {username: "klaus".to_string(),},
             BLEvents::MakeSimplePurchase {item_id: 1u32, user_id: 1u32,timestamp: 123456789u32,}
