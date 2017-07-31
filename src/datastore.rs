@@ -5,6 +5,8 @@
 //TODO: finish declaring datastore attributes and functions (mainly getters!)
 
 pub struct Datastore {
+    pub users: Vec<User>,
+    pub items: Vec<Item>,
         // keeps hashmap of user_id => user
         // keeps hashmap of user_id => user
         // keeps bill-vector
@@ -35,14 +37,14 @@ impl Default for UserGroup {
 }
 
 
-#[derive(Default, Builder, Debug)]
+#[derive(Default, Builder, Debug, PartialEq)]
 #[builder(setter(into))]
 pub struct User {
-    username: String,
+    pub username: String,
     //external_user_id: u32, //TODO: external_user_id used in external mapping
-    user_id: u32,
+    pub user_id: u32,
     //subuser_to: Option<u32>, //TODO: implement to group users
-    is_billed: bool,
+    pub is_billed: bool,
 }
 
 

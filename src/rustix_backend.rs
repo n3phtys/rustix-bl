@@ -5,9 +5,9 @@ use datastore;
 use datastore::UserGroup;
 use persistencer;
 
-pub struct RustixBackend {
+pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersistencer> {
     pub datastore: datastore::Datastore,
-    pub persistencer: persistencer::Persistencer,
+    pub persistencer: T,
 }
 /*
 
@@ -20,14 +20,14 @@ pub struct RustixBackend {
 */
 
 pub trait WriteBackend {
-    fn create_bill(timestamp: u32, user_ids: UserGroup, comment: String) -> ();
-    fn create_item(itemname: String, price_cents: u32, category: Option<String>) -> ();
-    fn create_user(username: String) -> ();
+    fn create_bill(&self, timestamp: u32, user_ids: UserGroup, comment: String) -> ();
+    fn create_item(&self, itemname: String, price_cents: u32, category: Option<String>) -> ();
+    fn create_user(&self, username: String) -> ();
 
-    fn delete_user(user_id: u32) -> ();
-    fn delete_item(item_id: u32) -> ();
+    fn delete_user(&self, user_id: u32) -> ();
+    fn delete_item(&self, item_id: u32) -> ();
 
-    fn purchase(user_id: u32, item_id: u32, timestamp: u32) -> ();
+    fn purchase(&self, user_id: u32, item_id: u32, timestamp: u32) -> ();
 }
 
 pub trait ReadBackend {
@@ -48,32 +48,32 @@ pub trait ReadBackend {
     //TODO: get top items of user
 }
 
-impl ReadBackend for RustixBackend {
+impl ReadBackend for RustixBackend<persistencer::TransientPersister> {
 
 }
 
-impl WriteBackend for RustixBackend {
-    fn create_bill(timestamp: u32, user_ids: UserGroup, comment: String) -> () {
+impl WriteBackend for RustixBackend<persistencer::TransientPersister> {
+    fn create_bill(&self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
         unimplemented!()
     }
 
-    fn create_item(itemname: String, price_cents: u32, category: Option<String>) -> () {
+    fn create_item(&self, itemname: String, price_cents: u32, category: Option<String>) -> () {
         unimplemented!()
     }
 
-    fn create_user(username: String) -> () {
+    fn create_user(&self, username: String) -> () {
         unimplemented!()
     }
 
-    fn delete_user(user_id: u32) -> () {
+    fn delete_user(&self, user_id: u32) -> () {
         unimplemented!()
     }
 
-    fn delete_item(item_id: u32) -> () {
+    fn delete_item(&self, item_id: u32) -> () {
         unimplemented!()
     }
 
-    fn purchase(user_id: u32, item_id: u32, timestamp: u32) -> () {
+    fn purchase(&self, user_id: u32, item_id: u32, timestamp: u32) -> () {
         unimplemented!()
     }
 }
@@ -95,9 +95,9 @@ mod tests {
     use rustix_backend::WriteBackend;
     use rustix_backend::ReadBackend;
 
-    fn build_test_backend() -> RustixBackend {
+    fn build_test_backend() -> RustixBackend<persistencer::TransientPersister> {
         return RustixBackend {
-            datastore: datastore::Datastore{},
+            datastore: datastore::Datastore{items: Vec::new(), users: Vec::new()},
             persistencer: persistencer::TransientPersister{events_stored : 0u32},
         }
     }
@@ -105,6 +105,8 @@ mod tests {
     #[test]
     fn simple_create_user_on_backend() {
         let backend = build_test_backend();
-
+        backend.create_user("klaus".to_string());
+        assert_eq!(backend.datastore.users.len(), 1);
+        assert_eq!(backend.datastore.users.get(0).unwrap().username, "klaus".to_string());
     }
 }

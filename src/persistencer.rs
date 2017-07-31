@@ -79,13 +79,13 @@ pub trait Persistencer {
 
 pub struct FilePersister {
     pub config: StaticConfig,
-    db: lmdb::Database,
-    db_env: lmdb::Environment,
-    events_stored: u32,
+    pub db: lmdb::Database,
+    pub db_env: lmdb::Environment,
+    pub events_stored: u32,
 }
 
 pub struct TransientPersister{
-    events_stored: u32
+    pub events_stored: u32
 }
 
 impl LMDBPersistencer for TransientPersister {
