@@ -10,6 +10,9 @@ use serde_json;
 use std;
 use serde_json::Error;
 use datastore;
+use std::collections::HashSet;
+
+
 
 pub trait Event {
     fn can_be_applied(&self, store: &Datastore) -> bool;
@@ -32,7 +35,7 @@ impl Event for BLEvents {
 
     fn can_be_applied(&self, store: &Datastore) -> bool {
         return match self {
-            &BLEvents::CreateItem{ref itemname, price_cents, ref category} => unimplemented!(),//TODO:
+            &BLEvents::CreateItem{ref itemname, price_cents, ref category} => true,
             &BLEvents::CreateUser{ref username} => true,
             &BLEvents::CreateBill{timestamp, ref user_ids, ref comment} => unimplemented!(),//TODO:
             &BLEvents::DeleteItem{item_id} => unimplemented!(), //TODO:
@@ -43,10 +46,18 @@ impl Event for BLEvents {
 
     fn apply(&self, store: &mut Datastore) -> () {
         return match self {
-            &BLEvents::CreateItem{ref itemname, price_cents, ref category} => unimplemented!(),//TODO:
+            &BLEvents::CreateItem{ref itemname, price_cents, ref category} => {
+                let id = store.item_id_counter;
+                for cat in category.iter() {
+                    store.categories.insert(cat.to_string());
+                }
+                store.items.push(datastore::Item{name: itemname.to_string(), item_id: id, cost_cents: price_cents, category: category.clone()});
+                store.item_id_counter = id + 1u32;
+            },
             &BLEvents::CreateUser{ref username} => {
-                let id = store.users.len() as u32;
-                store.users.push(datastore::User{username: username.to_string(), user_id: id, is_billed: true})
+                let id = store.user_id_counter;
+                store.users.push(datastore::User{username: username.to_string(), user_id: id, is_billed: true});
+                store.user_id_counter = id + 1u32;
             },
             &BLEvents::CreateBill{timestamp, ref user_ids, ref comment} => unimplemented!(),//TODO:
             &BLEvents::DeleteItem{item_id} => unimplemented!(),//TODO:

@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 
+use std::collections::HashSet;
 //TODO: finish declaring datastore attributes and functions (mainly getters!)
 
 pub struct Datastore {
@@ -17,9 +18,10 @@ pub struct Datastore {
         // keeps per user item scoring tree
         // keeps per user item simplified bill (hashmap<name,hasmap<price,number>>)
 
-        //user_id counter
+        pub user_id_counter: u32,
 
-        //item_id counter
+        pub item_id_counter: u32,
+        pub categories: HashSet<String>,
 }
 
 
@@ -53,19 +55,19 @@ pub struct User {
 #[derive(Default, Builder, Debug)]
 #[builder(setter(into))]
 pub struct Item {
-    name: String,
-    item_id: u32,
-    category_id: Option<u32>,
-    cost_cents: u32,
+    pub name: String,
+    pub item_id: u32,
+    pub category: Option<String>,
+    pub cost_cents: u32,
 }
 
 
 #[derive(Default, Builder, Debug)]
 #[builder(setter(into))]
 pub struct Bill {
-    timestamp_seconds: u32,
-    users: UserGroup,
-    comment: String,
+    pub timestamp_seconds: u32,
+    pub users: UserGroup,
+    pub comment: String,
 }
 
 
@@ -104,7 +106,7 @@ pub fn test() {
 
     let y = ItemBuilder::default()
         .name("cool item")
-        .category_id(None)
+        .category(None)
         .cost_cents(13u32)
         .item_id(19124u32)
         .build()

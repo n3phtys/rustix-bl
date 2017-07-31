@@ -23,14 +23,14 @@ pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersi
 */
 
 pub trait WriteBackend {
-    fn create_bill(&self, timestamp: u32, user_ids: UserGroup, comment: String) -> ();
-    fn create_item(&self, itemname: String, price_cents: u32, category: Option<String>) -> ();
+    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> ();
+    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> ();
     fn create_user(&mut self, username: String) -> ();
 
-    fn delete_user(&self, user_id: u32) -> ();
-    fn delete_item(&self, item_id: u32) -> ();
+    fn delete_user(&mut self, user_id: u32) -> ();
+    fn delete_item(&mut self, item_id: u32) -> ();
 
-    fn purchase(&self, user_id: u32, item_id: u32, timestamp: u32) -> ();
+    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> ();
 }
 
 pub trait ReadBackend {
@@ -57,27 +57,27 @@ impl ReadBackend for RustixBackend<persistencer::TransientPersister> {
 
 
 impl WriteBackend for RustixBackend<persistencer::TransientPersister> {
-    fn create_bill(&self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
+    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
         unimplemented!()
     }
 
-    fn create_item(&self, itemname: String, price_cents: u32, category: Option<String>) -> () {
-        unimplemented!()
+    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> () {
+        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::CreateItem{itemname: itemname, price_cents: price_cents, category: category}, &mut self.datastore);
     }
 
     fn create_user(&mut self, username: String) -> () {
         self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::CreateUser {username: username}, &mut self.datastore);
     }
 
-    fn delete_user(&self, user_id: u32) -> () {
+    fn delete_user(&mut self, user_id: u32) -> () {
         unimplemented!()
     }
 
-    fn delete_item(&self, item_id: u32) -> () {
+    fn delete_item(&mut self, item_id: u32) -> () {
         unimplemented!()
     }
 
-    fn purchase(&self, user_id: u32, item_id: u32, timestamp: u32) -> () {
+    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> () {
         unimplemented!()
     }
 }
@@ -95,13 +95,14 @@ mod tests {
     use std;
     use datastore;
     use persistencer;
+    use std::collections::HashSet;
 
     use rustix_backend::WriteBackend;
     use rustix_backend::ReadBackend;
 
     fn build_test_backend() -> RustixBackend<persistencer::TransientPersister> {
         return RustixBackend {
-            datastore: datastore::Datastore{items: Vec::new(), users: Vec::new()},
+            datastore: datastore::Datastore{items: Vec::new(), users: Vec::new(), user_id_counter: 0, item_id_counter:0, categories: HashSet::new() },
             persistencer: persistencer::TransientPersister{events_stored : 0u32},
         }
     }
@@ -111,6 +112,21 @@ mod tests {
         let mut backend = build_test_backend();
         backend.create_user("klaus".to_string());
         assert_eq!(backend.datastore.users.len(), 1);
+        assert_eq!(backend.datastore.user_id_counter, 1);
         assert_eq!(backend.datastore.users.get(0).unwrap().username, "klaus".to_string());
+    }
+
+    #[test]
+    fn simple_create_item_on_backend() {
+        let mut backend = build_test_backend();
+        backend.create_item("beer".to_string(), 95, Some("Alcohol".to_string()));
+        backend.create_item("soda".to_string(), 75, None);
+        assert_eq!(backend.datastore.items.len(), 2);
+        assert_eq!(backend.datastore.item_id_counter, 2);
+        assert_eq!(backend.datastore.items.get(0).unwrap().name, "beer".to_string());
+        assert_eq!(backend.datastore.items.get(1).unwrap().name, "soda".to_string());
+        assert_eq!(backend.datastore.items.get(0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(backend.datastore.items.get(1).unwrap().cost_cents, 75);
+        assert_eq!(backend.datastore.categories.len(), 1);
     }
 }
