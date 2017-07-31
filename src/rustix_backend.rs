@@ -4,6 +4,9 @@
 use datastore;
 use datastore::UserGroup;
 use persistencer;
+use rustix_event_shop;
+use persistencer::LMDBPersistencer;
+use persistencer::Persistencer;
 
 pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersistencer> {
     pub datastore: datastore::Datastore,
@@ -22,7 +25,7 @@ pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersi
 pub trait WriteBackend {
     fn create_bill(&self, timestamp: u32, user_ids: UserGroup, comment: String) -> ();
     fn create_item(&self, itemname: String, price_cents: u32, category: Option<String>) -> ();
-    fn create_user(&self, username: String) -> ();
+    fn create_user(&mut self, username: String) -> ();
 
     fn delete_user(&self, user_id: u32) -> ();
     fn delete_item(&self, item_id: u32) -> ();
@@ -52,6 +55,7 @@ impl ReadBackend for RustixBackend<persistencer::TransientPersister> {
 
 }
 
+
 impl WriteBackend for RustixBackend<persistencer::TransientPersister> {
     fn create_bill(&self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
         unimplemented!()
@@ -61,8 +65,8 @@ impl WriteBackend for RustixBackend<persistencer::TransientPersister> {
         unimplemented!()
     }
 
-    fn create_user(&self, username: String) -> () {
-        unimplemented!()
+    fn create_user(&mut self, username: String) -> () {
+        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::CreateUser {username: username}, &mut self.datastore);
     }
 
     fn delete_user(&self, user_id: u32) -> () {
@@ -104,7 +108,7 @@ mod tests {
 
     #[test]
     fn simple_create_user_on_backend() {
-        let backend = build_test_backend();
+        let mut backend = build_test_backend();
         backend.create_user("klaus".to_string());
         assert_eq!(backend.datastore.users.len(), 1);
         assert_eq!(backend.datastore.users.get(0).unwrap().username, "klaus".to_string());

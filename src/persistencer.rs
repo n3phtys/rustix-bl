@@ -104,7 +104,7 @@ impl LMDBPersistencer for TransientPersister {
 
 impl Persistencer for TransientPersister {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
-        unimplemented!()
+        unimplemented!() // TODO: implement this next
     }
 
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
