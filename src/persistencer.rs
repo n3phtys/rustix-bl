@@ -90,25 +90,38 @@ pub struct TransientPersister{
 
 impl LMDBPersistencer for TransientPersister {
     fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError> {
-        unimplemented!()
+        return Ok(self.increment_counter());
     }
+
 
     fn increment_counter(&mut self) -> () {
-        unimplemented!()
+        self.events_stored = self.events_stored + 1;
     }
-
     fn get_counter(&self) -> u32 {
-        unimplemented!()
+        return self.events_stored;
     }
 }
 
 impl Persistencer for TransientPersister {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
-        unimplemented!() // TODO: implement this next
+        let allowed = event.can_be_applied(datastore);
+        if allowed {
+            let id: u32 = self.get_counter() + 1u32;
+            match self.store_event_in_db(id, event) {
+                Err(e) => return false,
+                Ok(t) => {
+                    event.apply(datastore);
+                    return true;
+                }
+            }
+        } else {
+            return false;
+        }
     }
 
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
-        unimplemented!()
+        let counter = 0u32;
+        return Ok(counter);
     }
 }
 

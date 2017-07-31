@@ -9,7 +9,7 @@ use datastore::UserGroup;
 use serde_json;
 use std;
 use serde_json::Error;
-
+use datastore;
 
 pub trait Event {
     fn can_be_applied(&self, store: &Datastore) -> bool;
@@ -31,11 +31,28 @@ pub enum BLEvents {
 impl Event for BLEvents {
 
     fn can_be_applied(&self, store: &Datastore) -> bool {
-        unimplemented!()
+        return match self {
+            &BLEvents::CreateItem{ref itemname, price_cents, ref category} => unimplemented!(),//TODO:
+            &BLEvents::CreateUser{ref username} => true,
+            &BLEvents::CreateBill{timestamp, ref user_ids, ref comment} => unimplemented!(),//TODO:
+            &BLEvents::DeleteItem{item_id} => unimplemented!(), //TODO:
+            &BLEvents::DeleteUser{user_id} => unimplemented!(), //TODO:
+            &BLEvents::MakeSimplePurchase{user_id, item_id, timestamp} => unimplemented!(),//TODO:
+        }
     }
 
     fn apply(&self, store: &mut Datastore) -> () {
-        unimplemented!()
+        return match self {
+            &BLEvents::CreateItem{ref itemname, price_cents, ref category} => unimplemented!(),//TODO:
+            &BLEvents::CreateUser{ref username} => {
+                let id = store.users.len() as u32;
+                store.users.push(datastore::User{username: username.to_string(), user_id: id, is_billed: true})
+            },
+            &BLEvents::CreateBill{timestamp, ref user_ids, ref comment} => unimplemented!(),//TODO:
+            &BLEvents::DeleteItem{item_id} => unimplemented!(),//TODO:
+            &BLEvents::DeleteUser{user_id} => unimplemented!(),//TODO:
+            &BLEvents::MakeSimplePurchase{user_id, item_id, timestamp} => unimplemented!(),//TODO:
+        }
     }
 }
 

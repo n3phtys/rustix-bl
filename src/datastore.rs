@@ -23,6 +23,7 @@ pub struct Datastore {
 }
 
 
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum UserGroup {
     SingleUser{user_id: u32},
