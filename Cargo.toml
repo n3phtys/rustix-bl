@@ -1,6 +1,6 @@
 [package]
 authors = ["nephtys <christopher.kaag@gmail.com>"]
-name = "beerlist-rustix"
+name = "beerlistrustix"
 version = "0.1.0"
 [dependencies]
 bincode = "0.8.0"
