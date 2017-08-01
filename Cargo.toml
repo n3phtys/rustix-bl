@@ -1,7 +1,8 @@
 [package]
-authors = ["nephtys <christopher.kaag@gmail.com>"]
 name = "blrustix"
-version = "0.1.0"
+version = "0.2.0"
+authors = ["nephtys <christopher.kaag@gmail.com>"]
+
 [dependencies]
 bincode = "0.8.0"
 custom_derive = "0.1.7"

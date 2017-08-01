@@ -1,6 +1,6 @@
 [root]
 name = "blrustix"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "custom_derive 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
