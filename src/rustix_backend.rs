@@ -8,6 +8,7 @@ use rustix_event_shop;
 use persistencer::LMDBPersistencer;
 use persistencer::Persistencer;
 
+#[derive(Debug)]
 pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersistencer> {
     pub datastore: datastore::Datastore,
     pub persistencer: T,

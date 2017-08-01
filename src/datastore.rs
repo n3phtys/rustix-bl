@@ -5,6 +5,8 @@
 use std::collections::HashSet;
 //TODO: finish declaring datastore attributes and functions (mainly getters!)
 
+
+#[derive(Debug)]
 pub struct Datastore {
     pub users: Vec<User>,
     pub items: Vec<Item>,

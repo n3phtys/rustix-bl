@@ -77,6 +77,7 @@ pub trait Persistencer {
     //fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
 }
 
+#[derive(Debug)]
 pub struct FilePersister {
     pub config: StaticConfig,
     pub db: lmdb::Database,
@@ -84,6 +85,7 @@ pub struct FilePersister {
     pub events_stored: u32,
 }
 
+#[derive(Debug)]
 pub struct TransientPersister{
     pub events_stored: u32
 }
