@@ -19,7 +19,7 @@ use lmdb::Cursor;
 use lmdb::Transaction;
 use std::marker::Sized;
 use std::convert::AsRef;
-use bincode::{serialize, deserialize, Infinite};
+use bincode::{deserialize, serialize, Infinite};
 use serde_json;
 use std;
 use std::error::Error;
@@ -73,7 +73,9 @@ impl std::convert::From<Error_LMDB> for RustixError {
 
 pub trait Persistencer {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool;
-    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>; //returns number of events loaded
+
+    //returns number of events loaded
+    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
     //fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
 }
 
@@ -86,18 +88,17 @@ pub struct FilePersister {
 }
 
 #[derive(Debug)]
-pub struct TransientPersister{
+pub struct TransientPersister {
     pub config: StaticConfig,
-    pub events_stored: u32
+    pub events_stored: u32,
 }
 
 impl Default for TransientPersister {
     fn default() -> Self {
-        return TransientPersister{
-        config: StaticConfig::default(),
-        events_stored: 0,
-    }
-    ;
+        return TransientPersister {
+            config: StaticConfig::default(),
+            events_stored: 0,
+        };
     }
 }
 

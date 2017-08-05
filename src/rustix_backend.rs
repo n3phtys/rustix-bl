@@ -52,43 +52,70 @@ pub trait ReadBackend {
     //TODO: get top items of user
 }
 
-impl <T> ReadBackend for RustixBackend<T> where T: persistencer::Persistencer+persistencer::LMDBPersistencer{
-
+impl<T> ReadBackend for RustixBackend<T>
+where
+    T: persistencer::Persistencer + persistencer::LMDBPersistencer,
+{
 }
 
 
-impl <T> WriteBackend for RustixBackend<T> where T: persistencer::Persistencer+persistencer::LMDBPersistencer {
+impl<T> WriteBackend for RustixBackend<T>
+where
+    T: persistencer::Persistencer + persistencer::LMDBPersistencer,
+{
     fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
-        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::CreateBill {
-            timestamp: timestamp,
-            user_ids: user_ids,
-            comment: comment,
-        }, &mut self.datastore);
+        self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::CreateBill {
+                timestamp: timestamp,
+                user_ids: user_ids,
+                comment: comment,
+            },
+            &mut self.datastore,
+        );
     }
 
     fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> () {
-        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::CreateItem{itemname: itemname, price_cents: price_cents, category: category}, &mut self.datastore);
+        self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::CreateItem {
+                itemname: itemname,
+                price_cents: price_cents,
+                category: category,
+            },
+            &mut self.datastore,
+        );
     }
 
     fn create_user(&mut self, username: String) -> () {
-        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::CreateUser {username: username}, &mut self.datastore);
+        self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::CreateUser { username: username },
+            &mut self.datastore,
+        );
     }
 
     fn delete_user(&mut self, user_id: u32) -> () {
-        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::DeleteUser { user_id: user_id }, &mut self.datastore );
+        self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::DeleteUser { user_id: user_id },
+            &mut self.datastore,
+        );
     }
 
     fn delete_item(&mut self, item_id: u32) -> () {
 
-        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::DeleteItem { item_id: item_id }, &mut self.datastore );
+        self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::DeleteItem { item_id: item_id },
+            &mut self.datastore,
+        );
     }
 
     fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> () {
-        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::MakeSimplePurchase {
-            user_id: user_id,
-            item_id: item_id,
-            timestamp: timestamp,
-        }, &mut self.datastore);
+        self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::MakeSimplePurchase {
+                user_id: user_id,
+                item_id: item_id,
+                timestamp: timestamp,
+            },
+            &mut self.datastore,
+        );
     }
 }
 
@@ -114,7 +141,7 @@ mod tests {
         return RustixBackend {
             datastore: datastore::Datastore::default(),
             persistencer: persistencer::TransientPersister::default(),
-        }
+        };
     }
 
     #[test]
@@ -123,7 +150,10 @@ mod tests {
         backend.create_user("klaus".to_string());
         assert_eq!(backend.datastore.users.len(), 1);
         assert_eq!(backend.datastore.user_id_counter, 1);
-        assert_eq!(backend.datastore.users.get(&0).unwrap().username, "klaus".to_string());
+        assert_eq!(
+            backend.datastore.users.get(&0).unwrap().username,
+            "klaus".to_string()
+        );
     }
 
     #[test]
@@ -133,9 +163,25 @@ mod tests {
         backend.create_item("soda".to_string(), 75, None);
         assert_eq!(backend.datastore.items.len(), 2);
         assert_eq!(backend.datastore.item_id_counter, 2);
-        assert_eq!(backend.datastore.items.get(&0).unwrap().name, "beer".to_string());
-        assert_eq!(backend.datastore.items.get(&1).unwrap().name, "soda".to_string());
-        assert_eq!(backend.datastore.items.get(&0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(
+            backend.datastore.items.get(&0).unwrap().name,
+            "beer".to_string()
+        );
+        assert_eq!(
+            backend.datastore.items.get(&1).unwrap().name,
+            "soda".to_string()
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .items
+                .get(&0)
+                .unwrap()
+                .category
+                .clone()
+                .unwrap(),
+            "Alcohol".to_string()
+        );
         assert_eq!(backend.datastore.items.get(&1).unwrap().cost_cents, 75);
         assert_eq!(backend.datastore.categories.len(), 1);
     }
@@ -147,16 +193,45 @@ mod tests {
         backend.create_item("soda".to_string(), 75, None);
         assert_eq!(backend.datastore.items.len(), 2);
         assert_eq!(backend.datastore.item_id_counter, 2);
-        assert_eq!(backend.datastore.items.get(&0).unwrap().name, "beer".to_string());
-        assert_eq!(backend.datastore.items.get(&1).unwrap().name, "soda".to_string());
-        assert_eq!(backend.datastore.items.get(&0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(
+            backend.datastore.items.get(&0).unwrap().name,
+            "beer".to_string()
+        );
+        assert_eq!(
+            backend.datastore.items.get(&1).unwrap().name,
+            "soda".to_string()
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .items
+                .get(&0)
+                .unwrap()
+                .category
+                .clone()
+                .unwrap(),
+            "Alcohol".to_string()
+        );
         assert_eq!(backend.datastore.items.get(&1).unwrap().cost_cents, 75);
         assert_eq!(backend.datastore.categories.len(), 1);
         backend.delete_item(1);
         assert_eq!(backend.datastore.items.len(), 1);
         assert_eq!(backend.datastore.item_id_counter, 2);
-        assert_eq!(backend.datastore.items.get(&0).unwrap().name, "beer".to_string());
-        assert_eq!(backend.datastore.items.get(&0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(
+            backend.datastore.items.get(&0).unwrap().name,
+            "beer".to_string()
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .items
+                .get(&0)
+                .unwrap()
+                .category
+                .clone()
+                .unwrap(),
+            "Alcohol".to_string()
+        );
         assert_eq!(backend.datastore.categories.len(), 1);
 
     }
@@ -168,7 +243,10 @@ mod tests {
         backend.create_user("klaus".to_string());
         assert_eq!(backend.datastore.users.len(), 1);
         assert_eq!(backend.datastore.user_id_counter, 1);
-        assert_eq!(backend.datastore.users.get(&0).unwrap().username, "klaus".to_string());
+        assert_eq!(
+            backend.datastore.users.get(&0).unwrap().username,
+            "klaus".to_string()
+        );
         backend.delete_user(0);
         assert_eq!(backend.datastore.users.len(), 0);
         assert_eq!(backend.datastore.user_id_counter, 1);
@@ -206,8 +284,26 @@ mod tests {
         assert_eq!(backend.datastore.purchases.len(), 3);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &1u32);
-        assert_eq!(backend.datastore.top_drinks_per_user.get(&0).unwrap().get(&0u32).unwrap(), &0u32);
-        assert_eq!(backend.datastore.top_drinks_per_user.get(&1).unwrap().get(&0u32).unwrap(), &0u32);
+        assert_eq!(
+            backend
+                .datastore
+                .top_drinks_per_user
+                .get(&0)
+                .unwrap()
+                .get(&0u32)
+                .unwrap(),
+            &0u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .top_drinks_per_user
+                .get(&1)
+                .unwrap()
+                .get(&0u32)
+                .unwrap(),
+            &0u32
+        );
     }
 
     //TODO: #[test]

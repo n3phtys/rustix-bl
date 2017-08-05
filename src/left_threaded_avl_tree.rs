@@ -16,13 +16,16 @@ pub trait AVLTree {
 
 #[derive(Builder, Debug)]
 pub struct ScoredIdTreeMock {
-    ids: Vec<u32>, //just to mock it
-    scores: Vec<u32>//just to mock it
+    ids: Vec<u32>,    //just to mock it
+    scores: Vec<u32>, //just to mock it
 }
 
 impl Default for ScoredIdTreeMock {
     fn default() -> Self {
-        return ScoredIdTreeMock{ ids: Vec::new(), scores: Vec::new() };
+        return ScoredIdTreeMock {
+            ids: Vec::new(),
+            scores: Vec::new(),
+        };
     }
 }
 
@@ -30,20 +33,20 @@ impl ScoredIdTreeMock {
     fn index_of(&self, id: u32) -> Option<usize> {
         for i in 0..(self.ids.len() - 1) {
             if self.ids[i] == id {
-              return Some(i);
+                return Some(i);
             }
         }
         return None;
     }
 
     fn score_sorted_copy(&self) -> Vec<u32> {
-        let mut hashmap : HashMap<u32,u32> = HashMap::new();
-        for i in 0..(self.ids.len()-1) {
+        let mut hashmap: HashMap<u32, u32> = HashMap::new();
+        for i in 0..(self.ids.len() - 1) {
             hashmap.insert(self.ids[i], self.scores[i]);
         }
         let hm = &*(&mut hashmap);
-        let cmp = |a: &u32, b: &u32|hm.get(b).unwrap_or(&0u32).cmp(hm.get(a).unwrap_or(&0u32));
-        let mut x : Vec<u32> = self.ids.to_vec();
+        let cmp = |a: &u32, b: &u32| hm.get(b).unwrap_or(&0u32).cmp(hm.get(a).unwrap_or(&0u32));
+        let mut x: Vec<u32> = self.ids.to_vec();
         x.sort_by(cmp);
         return x;
     }
@@ -66,7 +69,10 @@ impl AVLTree for ScoredIdTreeMock {
 
     fn increment_by_one(&mut self, id: u32) -> Option<u32> {
         let o = self.index_of(id);
-        return o.map(|i| { self.scores[i] = self.scores[i] + 1; self.scores[i]});
+        return o.map(|i| {
+            self.scores[i] = self.scores[i] + 1;
+            self.scores[i]
+        });
     }
 
     fn remove(&mut self, id: u32) -> Option<u32> {
@@ -75,15 +81,15 @@ impl AVLTree for ScoredIdTreeMock {
             Some(i) => {
                 self.ids.remove(i);
                 return Some(self.scores.remove(i));
-            }   ,
+            }
             None => {
                 return None;
-            },
+            }
         }
     }
 
     fn extract_top(&self, n: usize) -> Vec<u32> {
-        let n : usize = cmp::min(n, self.ids.len());
+        let n: usize = cmp::min(n, self.ids.len());
         return self.score_sorted_copy()[0..(n)].to_vec();
     }
 }

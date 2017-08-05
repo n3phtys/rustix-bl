@@ -18,22 +18,19 @@ pub struct Datastore {
     pub top_drinks_per_user: HashMap<u32, HashSet<u32>>,
     pub drink_scores_per_user: HashMap<u32, ScoredIdTreeMock>,
 
+    // keeps hashmap of user_id => user
+    // keeps hashmap of user_id => user
+    // keeps bill-vector
+    // keeps scoring tree for saufbubbies / all users
+    // keeps saufbubbies
+    // keeps paginated user pages
+    // keeps categorized item pages
+    // keeps per user item scoring tree
+    // keeps per user item simplified bill (hashmap<name,hasmap<price,number>>)
+    pub user_id_counter: u32,
 
-
-        // keeps hashmap of user_id => user
-        // keeps hashmap of user_id => user
-        // keeps bill-vector
-        // keeps scoring tree for saufbubbies / all users
-        // keeps saufbubbies
-        // keeps paginated user pages
-        // keeps categorized item pages
-        // keeps per user item scoring tree
-        // keeps per user item simplified bill (hashmap<name,hasmap<price,number>>)
-
-        pub user_id_counter: u32,
-
-        pub item_id_counter: u32,
-        pub categories: HashSet<String>,
+    pub item_id_counter: u32,
+    pub categories: HashSet<String>,
 }
 
 pub trait Itemable {
@@ -77,9 +74,9 @@ impl Default for Datastore {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum UserGroup {
-    SingleUser{user_id: u32},
+    SingleUser { user_id: u32 },
     AllUsers,
-    MultipleUsers{user_ids: Vec<u32>},
+    MultipleUsers { user_ids: Vec<u32> },
 }
 
 impl Default for UserGroup {
@@ -123,13 +120,16 @@ pub struct Bill {
 
 #[derive(Debug)]
 pub enum Purchase {
-    SpecialPurchase { timestamp_seconds: u32, name: String, consumer_id: u32},
+    SpecialPurchase {
+        timestamp_seconds: u32,
+        name: String,
+        consumer_id: u32,
+    },
     SimplePurchase {
         timestamp_seconds: u32,
         item_id: u32, //buys one instance of this item
         consumer_id: u32,
-    }
-    /*,
+    }, /*,
     PaidForPurchase {
         timestamp_seconds: u32,
         item_id: u32, //buys one instance of this item
@@ -149,8 +149,7 @@ pub fn test() {
         //.subuser_to(None)
         .is_billed(true)
         .username("klaus")
-        .build()
-    ;
+        .build();
     println!("{:?}", x);
 
     let y = ItemBuilder::default()
@@ -158,7 +157,6 @@ pub fn test() {
         .category(None)
         .cost_cents(13u32)
         .item_id(19124u32)
-        .build()
-    ;
+        .build();
     println!("{:?}", y);
 }

@@ -39,11 +39,16 @@ pub mod default {
     use datastore;
     use persistencer;
 
-    pub fn build_transient_backend() -> rustix_backend::RustixBackend<persistencer::TransientPersister> {
+    pub fn build_transient_backend()
+        -> rustix_backend::RustixBackend<persistencer::TransientPersister>
+    {
         return build_transient_backend_with(20, 20);
     }
 
-    pub fn build_transient_backend_with(users_per_page: u8, top_users: u8) -> rustix_backend::RustixBackend<persistencer::TransientPersister> {
+    pub fn build_transient_backend_with(
+        users_per_page: u8,
+        top_users: u8,
+    ) -> rustix_backend::RustixBackend<persistencer::TransientPersister> {
         return rustix_backend::RustixBackend {
             datastore: datastore::Datastore::default(),
             persistencer: persistencer::TransientPersister::default(),
@@ -55,6 +60,5 @@ pub mod default {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
-    }
+    fn it_works() {}
 }
