@@ -10,12 +10,12 @@ use left_threaded_avl_tree::ScoredIdTreeMock;
 
 #[derive(Debug)]
 pub struct Datastore {
-    pub users: Vec<User>,
-    pub items: Vec<Item>,
+    pub users: HashMap<u32, User>,
+    pub items: HashMap<u32, Item>,
     pub purchases: Vec<Purchase>,
     pub top_user_scores: ScoredIdTreeMock,
-    pub top_users: Vec<u32>,
-    pub top_drinks_per_user: HashMap<u32, Vec<u32>>,
+    pub top_users: HashSet<u32>,
+    pub top_drinks_per_user: HashMap<u32, HashSet<u32>>,
     pub drink_scores_per_user: HashMap<u32, ScoredIdTreeMock>,
 
 
@@ -34,17 +34,36 @@ pub struct Datastore {
 
         pub item_id_counter: u32,
         pub categories: HashSet<String>,
-
 }
+
+pub trait Itemable {
+    fn has_item(&self, id: u32) -> bool;
+}
+
+pub trait Userable {
+    fn has_user(&self, id: u32) -> bool;
+}
+
+impl Userable for Datastore {
+    fn has_user(&self, id: u32) -> bool {
+        return self.users.contains_key(&id);
+    }
+}
+impl Itemable for Datastore {
+    fn has_item(&self, id: u32) -> bool {
+        return self.items.contains_key(&id);
+    }
+}
+
 
 impl Default for Datastore {
     fn default() -> Self {
         return Datastore {
-            users: Vec::new(),
-            items: Vec::new(),
+            users: HashMap::new(),
+            items: HashMap::new(),
             purchases: Vec::new(),
             top_user_scores: ScoredIdTreeMock::default(),
-            top_users: Vec::new(),
+            top_users: HashSet::new(),
             top_drinks_per_user: HashMap::new(),
             drink_scores_per_user: HashMap::new(),
             user_id_counter: 0,

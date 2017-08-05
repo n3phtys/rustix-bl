@@ -5,18 +5,25 @@
 
 use datastore::Datastore;
 use datastore::UserGroup;
+use datastore::Itemable;
+use datastore::Userable;
 
+use config::StaticConfig;
+
+use left_threaded_avl_tree::AVLTree;
+
+use std::collections::HashSet;
+use std::iter::FromIterator;
 use serde_json;
 use std;
 use serde_json::Error;
 use datastore;
-use std::collections::HashSet;
 
 
 
 pub trait Event {
     fn can_be_applied(&self, store: &Datastore) -> bool;
-    fn apply(&self, store: &mut Datastore) -> () ;
+    fn apply(&self, store: &mut Datastore, config: &StaticConfig) -> () ;
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -29,7 +36,9 @@ pub enum BLEvents {
     CreateBill{timestamp: u32, user_ids: UserGroup, comment: String},
 }
 
-
+fn hashset(data: &[u32]) -> HashSet<u32> {
+    HashSet::from_iter(data.iter().cloned())
+}
 
 impl Event for BLEvents {
 
@@ -37,30 +46,61 @@ impl Event for BLEvents {
         return match self {
             &BLEvents::CreateItem{ref itemname, price_cents, ref category} => true,
             &BLEvents::CreateUser{ref username} => true,
-            &BLEvents::CreateBill{timestamp, ref user_ids, ref comment} => unimplemented!(),//TODO:
-            &BLEvents::DeleteItem{item_id} => unimplemented!(), //TODO:
-            &BLEvents::DeleteUser{user_id} => unimplemented!(), //TODO:
-            &BLEvents::MakeSimplePurchase{user_id, item_id, timestamp} => unimplemented!(),//TODO:
+            &BLEvents::CreateBill{timestamp, ref user_ids, ref comment} => !store.purchases.is_empty(),
+            &BLEvents::DeleteItem{item_id} => store.has_item(item_id) ,
+            &BLEvents::DeleteUser{user_id} => store.has_user(user_id),
+            &BLEvents::MakeSimplePurchase{user_id, item_id, timestamp} => store.has_item(item_id) && store.has_user(user_id) ,
         }
     }
 
-    fn apply(&self, store: &mut Datastore) -> () {
+    fn apply(&self, store: &mut Datastore, config: &StaticConfig) -> () {
         return match self {
             &BLEvents::CreateItem{ref itemname, price_cents, ref category} => {
                 let id = store.item_id_counter;
                 for cat in category.iter() {
                     store.categories.insert(cat.to_string());
                 }
-                store.items.push(datastore::Item{name: itemname.to_string(), item_id: id, cost_cents: price_cents, category: category.clone()});
+                store.items.insert(id, datastore::Item{name: itemname.to_string(), item_id: id, cost_cents: price_cents, category: category.clone()});
                 store.item_id_counter = id + 1u32;
             },
             &BLEvents::CreateUser{ref username} => {
                 let id = store.user_id_counter;
-                store.users.push(datastore::User{username: username.to_string(), user_id: id, is_billed: true});
+                store.users.insert(id, datastore::User{username: username.to_string(), user_id: id, is_billed: true});
                 store.user_id_counter = id + 1u32;
             },
             &BLEvents::CreateBill{timestamp, ref user_ids, ref comment} => unimplemented!(),//TODO:
-            &BLEvents::DeleteItem{item_id} => unimplemented!(),//TODO:
+            &BLEvents::DeleteItem{item_id} => {
+                let v = store.items.remove(&item_id);
+                match v {
+                    None => (),
+                    Some(item) => {
+                        //potentially remove category, if no one else is sharing that category
+                        match item.category {
+                            None => (),
+                            Some(category) => {
+                                if !store.categories.iter().any(|x|x.eq(&category)) {
+                                    let _ = store.categories.remove(&category);
+                                }
+                            },
+                        }
+                        //remove from personal drink scores and re extract top drinks if that changes
+                        for (_key, mut value) in &mut store.drink_scores_per_user {
+                            value.remove(item_id);
+                        }
+
+                        for (_key, value) in &mut store.top_drinks_per_user {
+                            match store.drink_scores_per_user.get(&_key) {
+                                None => (),
+                                Some(drinkscore) => {
+                                    if value.contains(&item_id) {
+                                        *value = hashset(drinkscore.extract_top(config.top_drinks_per_user as usize).as_slice());
+                                    }
+                                },
+                            }
+                        }
+                    },
+                }
+            },
             &BLEvents::DeleteUser{user_id} => unimplemented!(),//TODO:
             &BLEvents::MakeSimplePurchase{user_id, item_id, timestamp} => unimplemented!(),//TODO:
         }
@@ -78,6 +118,24 @@ mod tests {
     use rustix_event_shop::BLEvents;
     use serde_json;
     use std;
+
+
+
+    #[test]
+    fn hashset_test() {
+        let mut hashset = std::collections::HashSet::new();
+
+        let str_1 = "Hello World".to_string();
+
+        hashset.insert(str_1);
+
+        let str_2_a = "Hello".to_string();
+        let str_2_b = " World".to_string();
+        let str_2 = str_2_a + &str_2_b;
+
+        assert!(hashset.remove(&str_2))
+    }
+
 
     #[test]
     fn events_serialize_and_deserialize_raw() {

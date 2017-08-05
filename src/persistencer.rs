@@ -124,7 +124,7 @@ impl Persistencer for TransientPersister {
             match self.store_event_in_db(id, event) {
                 Err(e) => return false,
                 Ok(t) => {
-                    event.apply(datastore);
+                    event.apply(datastore, &self.config);
                     return true;
                 }
             }
@@ -183,7 +183,7 @@ impl Persistencer for FilePersister {
             match self.store_event_in_db(id, event) {
                 Err(e) => return false,
                 Ok(t) => {
-                    event.apply(datastore);
+                    event.apply(datastore, &self.config);
                     return true;
                 }
             }
@@ -206,7 +206,7 @@ impl Persistencer for FilePersister {
                 println!("{:?}", json);
                 let event: BLEvents = try!(serde_json::from_str(json));
                 if event.can_be_applied(datastore) {
-                    event.apply(datastore);
+                    event.apply(datastore, &self.config);
                     counter = counter + 1u32;
                 }
             }

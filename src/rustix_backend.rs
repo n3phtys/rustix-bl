@@ -123,7 +123,7 @@ mod tests {
         backend.create_user("klaus".to_string());
         assert_eq!(backend.datastore.users.len(), 1);
         assert_eq!(backend.datastore.user_id_counter, 1);
-        assert_eq!(backend.datastore.users.get(0).unwrap().username, "klaus".to_string());
+        assert_eq!(backend.datastore.users.get(&0).unwrap().username, "klaus".to_string());
     }
 
     #[test]
@@ -133,30 +133,30 @@ mod tests {
         backend.create_item("soda".to_string(), 75, None);
         assert_eq!(backend.datastore.items.len(), 2);
         assert_eq!(backend.datastore.item_id_counter, 2);
-        assert_eq!(backend.datastore.items.get(0).unwrap().name, "beer".to_string());
-        assert_eq!(backend.datastore.items.get(1).unwrap().name, "soda".to_string());
-        assert_eq!(backend.datastore.items.get(0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
-        assert_eq!(backend.datastore.items.get(1).unwrap().cost_cents, 75);
+        assert_eq!(backend.datastore.items.get(&0).unwrap().name, "beer".to_string());
+        assert_eq!(backend.datastore.items.get(&1).unwrap().name, "soda".to_string());
+        assert_eq!(backend.datastore.items.get(&0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(backend.datastore.items.get(&1).unwrap().cost_cents, 75);
         assert_eq!(backend.datastore.categories.len(), 1);
     }
 
-    //#[test]
+    #[test]
     fn simple_delete_item() {
         let mut backend = build_test_backend();
         backend.create_item("beer".to_string(), 95, Some("Alcohol".to_string()));
         backend.create_item("soda".to_string(), 75, None);
         assert_eq!(backend.datastore.items.len(), 2);
         assert_eq!(backend.datastore.item_id_counter, 2);
-        assert_eq!(backend.datastore.items.get(0).unwrap().name, "beer".to_string());
-        assert_eq!(backend.datastore.items.get(1).unwrap().name, "soda".to_string());
-        assert_eq!(backend.datastore.items.get(0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
-        assert_eq!(backend.datastore.items.get(1).unwrap().cost_cents, 75);
+        assert_eq!(backend.datastore.items.get(&0).unwrap().name, "beer".to_string());
+        assert_eq!(backend.datastore.items.get(&1).unwrap().name, "soda".to_string());
+        assert_eq!(backend.datastore.items.get(&0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(backend.datastore.items.get(&1).unwrap().cost_cents, 75);
         assert_eq!(backend.datastore.categories.len(), 1);
         backend.delete_item(1);
         assert_eq!(backend.datastore.items.len(), 1);
         assert_eq!(backend.datastore.item_id_counter, 2);
-        assert_eq!(backend.datastore.items.get(0).unwrap().name, "beer".to_string());
-        assert_eq!(backend.datastore.items.get(0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(backend.datastore.items.get(&0).unwrap().name, "beer".to_string());
+        assert_eq!(backend.datastore.items.get(&0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
         assert_eq!(backend.datastore.categories.len(), 1);
 
     }
@@ -168,7 +168,7 @@ mod tests {
         backend.create_user("klaus".to_string());
         assert_eq!(backend.datastore.users.len(), 1);
         assert_eq!(backend.datastore.user_id_counter, 1);
-        assert_eq!(backend.datastore.users.get(0).unwrap().username, "klaus".to_string());
+        assert_eq!(backend.datastore.users.get(&0).unwrap().username, "klaus".to_string());
         backend.delete_user(0);
         assert_eq!(backend.datastore.users.len(), 0);
         assert_eq!(backend.datastore.user_id_counter, 1);
@@ -178,6 +178,8 @@ mod tests {
     //TODO: #[test]
     fn simple_purchase() {
         let mut backend = build_test_backend();
+        backend.persistencer.config.users_in_top_users = 1u8;
+
         //create two users
         backend.create_user("klaus".to_string());
         backend.create_user("dieter".to_string());
@@ -188,24 +190,24 @@ mod tests {
         //TODO: make first purchase by A
         backend.purchase(0, 0, 12345678u32);
         assert_eq!(backend.datastore.purchases.len(), 1);
-        assert_eq!(backend.datastore.top_users[0], 0);
-        assert_eq!(backend.datastore.top_users[1], 1);
+        assert_eq!(backend.datastore.top_users.len(), 1);
+        assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
 
         //TODO: make second purchase by B
         backend.purchase(1, 0, 12345878u32);
         assert_eq!(backend.datastore.purchases.len(), 2);
-        assert_eq!(backend.datastore.top_users[0], 0);
-        assert_eq!(backend.datastore.top_users[1], 1);
+        assert_eq!(backend.datastore.top_users.len(), 1);
+        assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
 
         //TODO: make third purchase by B
         backend.purchase(1, 0, 12347878u32);
 
         //TODO: should now be A > B and all data should be correct
         assert_eq!(backend.datastore.purchases.len(), 3);
-        assert_eq!(backend.datastore.top_users[0], 1);
-        assert_eq!(backend.datastore.top_users[1], 0);
-        assert_eq!(backend.datastore.top_drinks_per_user.get(&0).unwrap()[0], 0);
-        assert_eq!(backend.datastore.top_drinks_per_user.get(&1).unwrap()[0], 0);
+        assert_eq!(backend.datastore.top_users.len(), 1);
+        assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &1u32);
+        assert_eq!(backend.datastore.top_drinks_per_user.get(&0).unwrap().get(&0u32).unwrap(), &0u32);
+        assert_eq!(backend.datastore.top_drinks_per_user.get(&1).unwrap().get(&0u32).unwrap(), &0u32);
     }
 
     //TODO: #[test]
