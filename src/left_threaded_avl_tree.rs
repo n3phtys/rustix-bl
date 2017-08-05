@@ -31,7 +31,7 @@ impl Default for ScoredIdTreeMock {
 
 impl ScoredIdTreeMock {
     fn index_of(&self, id: u32) -> Option<usize> {
-        for i in 0..(self.ids.len() - 1) {
+        for i in 0..(self.ids.len()) {
             if self.ids[i] == id {
                 return Some(i);
             }

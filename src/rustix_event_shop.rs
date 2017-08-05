@@ -148,7 +148,29 @@ impl Event for BLEvents {
                     }
                 }
             }
-            &BLEvents::DeleteUser { user_id } => unimplemented!(),//TODO:
+            &BLEvents::DeleteUser { user_id } => {
+                //remove from user hashmap
+                let _ = store.users.remove(&user_id);
+
+                //remove user item score
+                let _ = store.drink_scores_per_user.remove(&user_id);
+
+                //remove user top items
+                let _ = store.top_drinks_per_user.remove(&user_id);
+
+                //remove from user score tree
+                let _ = store.top_user_scores.remove(user_id);
+
+                //remove from top users and renew topusers if that is the case
+                if store.top_users.remove(&user_id) {
+                    store.top_users = hashset(
+                        store
+                            .top_user_scores
+                            .extract_top(config.users_in_top_users as usize)
+                            .as_slice(),
+                    );
+                }
+            }
             &BLEvents::MakeSimplePurchase {
                 user_id,
                 item_id,

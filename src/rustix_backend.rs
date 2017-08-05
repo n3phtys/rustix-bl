@@ -237,7 +237,7 @@ mod tests {
     }
 
 
-    //TODO: #[test]
+    #[test]
     fn simple_delete_user() {
         let mut backend = build_test_backend();
         backend.create_user("klaus".to_string());
