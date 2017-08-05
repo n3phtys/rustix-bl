@@ -59,7 +59,11 @@ impl <T> ReadBackend for RustixBackend<T> where T: persistencer::Persistencer+pe
 
 impl <T> WriteBackend for RustixBackend<T> where T: persistencer::Persistencer+persistencer::LMDBPersistencer {
     fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
-        unimplemented!()
+        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::CreateBill {
+            timestamp: timestamp,
+            user_ids: user_ids,
+            comment: comment,
+        }, &mut self.datastore);
     }
 
     fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> () {
@@ -71,15 +75,20 @@ impl <T> WriteBackend for RustixBackend<T> where T: persistencer::Persistencer+p
     }
 
     fn delete_user(&mut self, user_id: u32) -> () {
-        unimplemented!()
+        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::DeleteUser { user_id: user_id }, &mut self.datastore );
     }
 
     fn delete_item(&mut self, item_id: u32) -> () {
-        unimplemented!()
+
+        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::DeleteItem { item_id: item_id }, &mut self.datastore );
     }
 
     fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> () {
-        unimplemented!()
+        self.persistencer.test_store_apply(&rustix_event_shop::BLEvents::MakeSimplePurchase {
+            user_id: user_id,
+            item_id: item_id,
+            timestamp: timestamp,
+        }, &mut self.datastore);
     }
 }
 
@@ -130,4 +139,68 @@ mod tests {
         assert_eq!(backend.datastore.items.get(1).unwrap().cost_cents, 75);
         assert_eq!(backend.datastore.categories.len(), 1);
     }
+
+    //TODO: #[test]
+    fn simple_delete_item() {
+        let mut backend = build_test_backend();
+        backend.create_item("beer".to_string(), 95, Some("Alcohol".to_string()));
+        backend.create_item("soda".to_string(), 75, None);
+        assert_eq!(backend.datastore.items.len(), 2);
+        assert_eq!(backend.datastore.item_id_counter, 2);
+        assert_eq!(backend.datastore.items.get(0).unwrap().name, "beer".to_string());
+        assert_eq!(backend.datastore.items.get(1).unwrap().name, "soda".to_string());
+        assert_eq!(backend.datastore.items.get(0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(backend.datastore.items.get(1).unwrap().cost_cents, 75);
+        assert_eq!(backend.datastore.categories.len(), 1);
+        backend.delete_item(1);
+        assert_eq!(backend.datastore.items.len(), 1);
+        assert_eq!(backend.datastore.item_id_counter, 2);
+        assert_eq!(backend.datastore.items.get(0).unwrap().name, "beer".to_string());
+        assert_eq!(backend.datastore.items.get(0).unwrap().category.clone().unwrap(), "Alcohol".to_string());
+        assert_eq!(backend.datastore.categories.len(), 1);
+
+    }
+
+
+    //TODO: #[test]
+    fn simple_delete_user() {
+        let mut backend = build_test_backend();
+        backend.create_user("klaus".to_string());
+        assert_eq!(backend.datastore.users.len(), 1);
+        assert_eq!(backend.datastore.user_id_counter, 1);
+        assert_eq!(backend.datastore.users.get(0).unwrap().username, "klaus".to_string());
+        backend.delete_user(0);
+        assert_eq!(backend.datastore.users.len(), 0);
+        assert_eq!(backend.datastore.user_id_counter, 1);
+    }
+
+
+    //TODO: #[test]
+    fn simple_purchase() {
+        //TODO: create two users
+
+        //TODO: create one item
+
+        //TODO: make first purchase by A
+
+        //TODO: make second purchase by B
+
+        //TODO: make third purchase by B
+
+        //TODO: should now be A > B and all data should be correct
+
+    }
+
+    //TODO: #[test]
+    fn simple_create_bill() {
+        let mut backend = build_test_backend();
+        //TODO: create two users, create three items, make 1 user purchase 2 items but not the third
+
+        //TODO: create a bill
+
+        //TODO: control that current balance is down
+
+        //TODO: control that bill contains correct data
+    }
+
 }
