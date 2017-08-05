@@ -14,10 +14,16 @@ pub trait AVLTree {
     fn extract_top(&self, n: usize) -> Vec<u32>;
 }
 
-#[derive(Default, Builder, Debug)]
+#[derive(Builder, Debug)]
 pub struct ScoredIdTreeMock {
     ids: Vec<u32>, //just to mock it
     scores: Vec<u32>//just to mock it
+}
+
+impl Default for ScoredIdTreeMock {
+    fn default() -> Self {
+        return ScoredIdTreeMock{ ids: Vec::new(), scores: Vec::new() };
+    }
 }
 
 impl ScoredIdTreeMock {
@@ -78,7 +84,6 @@ impl AVLTree for ScoredIdTreeMock {
 
     fn extract_top(&self, n: usize) -> Vec<u32> {
         let n : usize = cmp::min(n, self.ids.len());
-        //println!("Extracting {:?} from {:?}", n, self);
         return self.score_sorted_copy()[0..(n)].to_vec();
     }
 }

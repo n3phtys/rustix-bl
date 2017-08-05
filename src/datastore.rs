@@ -3,6 +3,8 @@
 
 
 use std::collections::HashSet;
+use std::collections::HashMap;
+use left_threaded_avl_tree::ScoredIdTreeMock;
 //TODO: finish declaring datastore attributes and functions (mainly getters!)
 
 
@@ -10,6 +12,14 @@ use std::collections::HashSet;
 pub struct Datastore {
     pub users: Vec<User>,
     pub items: Vec<Item>,
+    pub purchases: Vec<Purchase>,
+    pub top_user_scores: ScoredIdTreeMock,
+    pub top_users: Vec<u32>,
+    pub top_drinks_per_user: HashMap<u32, Vec<u32>>,
+    pub drink_scores_per_user: HashMap<u32, ScoredIdTreeMock>,
+
+
+
         // keeps hashmap of user_id => user
         // keeps hashmap of user_id => user
         // keeps bill-vector
@@ -24,6 +34,24 @@ pub struct Datastore {
 
         pub item_id_counter: u32,
         pub categories: HashSet<String>,
+
+}
+
+impl Default for Datastore {
+    fn default() -> Self {
+        return Datastore {
+            users: Vec::new(),
+            items: Vec::new(),
+            purchases: Vec::new(),
+            top_user_scores: ScoredIdTreeMock::default(),
+            top_users: Vec::new(),
+            top_drinks_per_user: HashMap::new(),
+            drink_scores_per_user: HashMap::new(),
+            user_id_counter: 0,
+            item_id_counter: 0,
+            categories: HashSet::new(),
+        };
+    }
 }
 
 

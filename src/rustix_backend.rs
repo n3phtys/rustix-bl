@@ -112,8 +112,8 @@ mod tests {
 
     fn build_test_backend() -> RustixBackend<persistencer::TransientPersister> {
         return RustixBackend {
-            datastore: datastore::Datastore{items: Vec::new(), users: Vec::new(), user_id_counter: 0, item_id_counter:0, categories: HashSet::new() },
-            persistencer: persistencer::TransientPersister{events_stored : 0u32},
+            datastore: datastore::Datastore::default(),
+            persistencer: persistencer::TransientPersister::default(),
         }
     }
 
@@ -140,7 +140,7 @@ mod tests {
         assert_eq!(backend.datastore.categories.len(), 1);
     }
 
-    //TODO: #[test]
+    //#[test]
     fn simple_delete_item() {
         let mut backend = build_test_backend();
         backend.create_item("beer".to_string(), 95, Some("Alcohol".to_string()));
@@ -177,23 +177,40 @@ mod tests {
 
     //TODO: #[test]
     fn simple_purchase() {
-        //TODO: create two users
+        let mut backend = build_test_backend();
+        //create two users
+        backend.create_user("klaus".to_string());
+        backend.create_user("dieter".to_string());
 
-        //TODO: create one item
+        //create one item
+        backend.create_item("beer".to_string(), 135u32, Some("Alcoholics".to_string()));
 
         //TODO: make first purchase by A
+        backend.purchase(0, 0, 12345678u32);
+        assert_eq!(backend.datastore.purchases.len(), 1);
+        assert_eq!(backend.datastore.top_users[0], 0);
+        assert_eq!(backend.datastore.top_users[1], 1);
 
         //TODO: make second purchase by B
+        backend.purchase(1, 0, 12345878u32);
+        assert_eq!(backend.datastore.purchases.len(), 2);
+        assert_eq!(backend.datastore.top_users[0], 0);
+        assert_eq!(backend.datastore.top_users[1], 1);
 
         //TODO: make third purchase by B
+        backend.purchase(1, 0, 12347878u32);
 
         //TODO: should now be A > B and all data should be correct
-
+        assert_eq!(backend.datastore.purchases.len(), 3);
+        assert_eq!(backend.datastore.top_users[0], 1);
+        assert_eq!(backend.datastore.top_users[1], 0);
+        assert_eq!(backend.datastore.top_drinks_per_user.get(&0).unwrap()[0], 0);
+        assert_eq!(backend.datastore.top_drinks_per_user.get(&1).unwrap()[0], 0);
     }
 
     //TODO: #[test]
     fn simple_create_bill() {
-        let mut backend = build_test_backend();
+        //let mut backend = build_test_backend();
         //TODO: create two users, create three items, make 1 user purchase 2 items but not the third
 
         //TODO: create a bill

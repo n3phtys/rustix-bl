@@ -87,8 +87,20 @@ pub struct FilePersister {
 
 #[derive(Debug)]
 pub struct TransientPersister{
+    pub config: StaticConfig,
     pub events_stored: u32
 }
+
+impl Default for TransientPersister {
+    fn default() -> Self {
+        return TransientPersister{
+        config: StaticConfig::default(),
+        events_stored: 0,
+    }
+    ;
+    }
+}
+
 
 impl LMDBPersistencer for TransientPersister {
     fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError> {
