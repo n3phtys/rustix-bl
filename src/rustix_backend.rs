@@ -52,12 +52,12 @@ pub trait ReadBackend {
     //TODO: get top items of user
 }
 
-impl ReadBackend for RustixBackend<persistencer::TransientPersister> {
+impl <T> ReadBackend for RustixBackend<T> where T: persistencer::Persistencer+persistencer::LMDBPersistencer{
 
 }
 
 
-impl WriteBackend for RustixBackend<persistencer::TransientPersister> {
+impl <T> WriteBackend for RustixBackend<T> where T: persistencer::Persistencer+persistencer::LMDBPersistencer {
     fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
         unimplemented!()
     }
