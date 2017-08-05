@@ -5,7 +5,6 @@ matrix:
     fast_finish: true
     include:
         - rust: nightly
-          env: FEATURES="--features nightly"
         - rust: beta
         - rust: stable
 
@@ -17,7 +16,6 @@ cache:
 script:
   - cargo build --verbose $FEATURES
   - cargo test --verbose $FEATURES
-  - 'if [ $TRAVIS_RUST_VERSION = nightly ]; then for f in ./benches/*.rs; do cargo test --bench $(basename $f .rs) $FEATURES; done; fi'
 
 addons:
   apt:
