@@ -106,7 +106,10 @@ mod tests {
     fn it_transient_add_user() {
         let mut b = build_transient_backend();
         b.create_user("klaus".to_string());
-        assert_eq!(b.datastore.users.get(&0u32).unwrap().username, "klaus".to_string());
+        assert_eq!(
+            b.datastore.users.get(&0u32).unwrap().username,
+            "klaus".to_string()
+        );
     }
 
     #[test]

@@ -41,7 +41,7 @@ impl ScoredIdTreeMock {
 
     fn score_sorted_copy(&self) -> Vec<u32> {
         let mut hashmap: HashMap<u32, u32> = HashMap::new();
-        for i in 0..(self.ids.len() - 1) {
+        for i in 0..(self.ids.len()) {
             hashmap.insert(self.ids[i], self.scores[i]);
         }
         let hm = &*(&mut hashmap);

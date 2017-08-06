@@ -248,6 +248,11 @@ mod tests {
         backend.create_item("beer".to_string(), 135u32, Some("Alcoholics".to_string()));
 
         //make first purchase by A
+
+        println!(
+            "Beginning simple purchase test with datastore={:?}",
+            backend.datastore
+        );
         backend.purchase(0, 0, 12345678u32);
         assert_eq!(backend.datastore.purchases.len(), 1);
         assert_eq!(backend.datastore.top_users.len(), 1);
@@ -265,7 +270,12 @@ mod tests {
         //should now be A > B and all data should be correct
         assert_eq!(backend.datastore.purchases.len(), 3);
         assert_eq!(backend.datastore.top_users.len(), 1);
-        assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &1u32);
+
+        println!(
+            "Ending simple purchase test with datastore={:?}",
+            backend.datastore
+        );
+        assert_eq!(backend.datastore.top_users.get(&1).unwrap(), &1u32);
         assert_eq!(
             backend
                 .datastore

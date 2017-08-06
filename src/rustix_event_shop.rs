@@ -11,6 +11,7 @@ use datastore::Userable;
 use config::StaticConfig;
 
 use left_threaded_avl_tree::AVLTree;
+use left_threaded_avl_tree::ScoredIdTreeMock;
 
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -48,7 +49,9 @@ pub enum BLEvents {
 }
 
 fn hashset(data: &[u32]) -> HashSet<u32> {
-    HashSet::from_iter(data.iter().cloned())
+    let r = HashSet::from_iter(data.iter().cloned());
+    println!("Hashset generated from Vec={:?} to Hashset={:?}", data, r);
+    return r;
 }
 
 impl Event for BLEvents {
@@ -96,6 +99,10 @@ impl Event for BLEvents {
                     },
                 );
                 store.item_id_counter = id + 1u32;
+
+                for (_, value) in &mut store.drink_scores_per_user {
+                    (*value).insert(id);
+                }
             }
             &BLEvents::CreateUser { ref username } => {
                 let id = store.user_id_counter;
@@ -108,6 +115,24 @@ impl Event for BLEvents {
                     },
                 );
                 store.user_id_counter = id + 1u32;
+
+                //add per user scores and top items:
+                let mut score_tree = ScoredIdTreeMock::default();
+                for (_key, _) in &store.items {
+                    let _ = score_tree.insert(*_key);
+                }
+
+                store.drink_scores_per_user.insert(id, score_tree);
+                store.top_drinks_per_user.insert(id, HashSet::new());
+
+                //add to user scores and reextract:
+                store.top_user_scores.insert(id);
+                store.top_users = hashset(
+                    store
+                        .top_user_scores
+                        .extract_top(config.users_in_top_users)
+                        .as_slice(),
+                );
             }
             &BLEvents::CreateBill {
                 timestamp,
@@ -188,19 +213,35 @@ impl Event for BLEvents {
                     drinkscore.increment_by_one(item_id);
                     // if not in top items, potentially extract new set
                     if let Some(topitems) = store.top_drinks_per_user.get_mut(&user_id) {
-                        if !topitems.contains(&item_id) {
-                            *topitems = hashset(drinkscore.extract_top(config.top_drinks_per_user).as_slice());
+                        if !(topitems.contains(&item_id)) {
+                            *topitems = hashset(
+                                drinkscore
+                                    .extract_top(config.top_drinks_per_user)
+                                    .as_slice(),
+                            );
+                            println!("New Topitems: {:?}", topitems);
                         }
                     }
                 }
 
-
                 // increase user score
+                store.top_user_scores.increment_by_one(user_id);
 
                 // if not in top users, potentially extract new set
-
-                unimplemented!()
-            }//TODO:
+                if !(store.top_users.contains(&user_id)) {
+                    println!("not in top users for userid = {}", user_id);
+                    store.top_users = hashset(
+                        store
+                            .top_user_scores
+                            .extract_top(config.users_in_top_users)
+                            .as_slice(),
+                    );
+                } else {
+                    println!("already in top users for userid = {}", user_id);
+                }
+                println!("New User Scores: {:?}", store.top_user_scores);
+                println!("New Top Users: {:?}", store.top_users);
+            }
         };
     }
 }
