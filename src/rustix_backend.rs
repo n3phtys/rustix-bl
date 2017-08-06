@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn simple_purchase() {
         let mut backend = build_test_backend();
-        backend.persistencer.config.users_in_top_users = 1u8;
+        backend.persistencer.config.users_in_top_users = 1usize;
 
         //create two users
         backend.create_user("klaus".to_string());
@@ -247,22 +247,22 @@ mod tests {
         //create one item
         backend.create_item("beer".to_string(), 135u32, Some("Alcoholics".to_string()));
 
-        //TODO: make first purchase by A
+        //make first purchase by A
         backend.purchase(0, 0, 12345678u32);
         assert_eq!(backend.datastore.purchases.len(), 1);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
 
-        //TODO: make second purchase by B
+        //make second purchase by B
         backend.purchase(1, 0, 12345878u32);
         assert_eq!(backend.datastore.purchases.len(), 2);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
 
-        //TODO: make third purchase by B
+        //make third purchase by B
         backend.purchase(1, 0, 12347878u32);
 
-        //TODO: should now be A > B and all data should be correct
+        //should now be A > B and all data should be correct
         assert_eq!(backend.datastore.purchases.len(), 3);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &1u32);

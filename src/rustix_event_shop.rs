@@ -175,7 +175,32 @@ impl Event for BLEvents {
                 user_id,
                 item_id,
                 timestamp,
-            } => unimplemented!(),//TODO:
+            } => {
+                // add purchase to vector
+                store.purchases.push(datastore::Purchase::SimplePurchase {
+                    timestamp_seconds: timestamp,
+                    item_id: item_id,
+                    consumer_id: user_id,
+                });
+
+                // increase item score for user
+                if let Some(ref mut drinkscore) = store.drink_scores_per_user.get_mut(&user_id) {
+                    drinkscore.increment_by_one(item_id);
+                    // if not in top items, potentially extract new set
+                    if let Some(topitems) = store.top_drinks_per_user.get_mut(&user_id) {
+                        if !topitems.contains(&item_id) {
+                            *topitems = hashset(drinkscore.extract_top(config.top_drinks_per_user).as_slice());
+                        }
+                    }
+                }
+
+
+                // increase user score
+
+                // if not in top users, potentially extract new set
+
+                unimplemented!()
+            }//TODO:
         };
     }
 }

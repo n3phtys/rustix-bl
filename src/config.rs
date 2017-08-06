@@ -2,9 +2,9 @@ use std;
 
 #[derive(Debug)]
 pub struct StaticConfig {
-    pub users_per_page: u8,
-    pub users_in_top_users: u8,
-    pub top_drinks_per_user: u8,
+    pub users_per_page: usize,
+    pub users_in_top_users: usize,
+    pub top_drinks_per_user: usize,
 }
 
 impl Default for StaticConfig {
