@@ -33,7 +33,7 @@ pub trait WriteBackend {
 
     fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> ();
 
-    fn reload(&mut self) -> ();
+    fn reload(&mut self) -> Result<u32, persistencer::RustixError>;
 }
 
 
@@ -96,8 +96,8 @@ where
             &mut self.datastore,
         );
     }
-    fn reload(&mut self) -> () {
-        self.persistencer.reload_from_filepath(&mut self.datastore);
+    fn reload(&mut self) -> Result<u32, persistencer::RustixError> {
+        return self.persistencer.reload_from_filepath(&mut self.datastore);
     }
 }
 
