@@ -5,7 +5,6 @@
 use std::collections::HashSet;
 use std::collections::HashMap;
 use left_threaded_avl_tree::ScoredIdTreeMock;
-//TODO: finish declaring datastore attributes and functions (mainly getters!)
 
 
 #[derive(Debug)]
@@ -120,11 +119,11 @@ pub struct Bill {
 
 #[derive(Debug)]
 pub enum Purchase {
-    SpecialPurchase {
+    /* SpecialPurchase {
         timestamp_seconds: u32,
         name: String,
         consumer_id: u32,
-    },
+    },*/
     SimplePurchase {
         timestamp_seconds: u32,
         item_id: u32, //buys one instance of this item
@@ -136,27 +135,4 @@ pub enum Purchase {
         consumer_id: u32,
         payer_id: u32, //paid for by this person
     }*/
-}
-
-
-pub fn test() {
-
-    println!("itemstorage functions:");
-
-    let x = UserBuilder::default()
-        //.external_user_id(19124u32)
-        .user_id(1234u32)
-        //.subuser_to(None)
-        .is_billed(true)
-        .username("klaus")
-        .build();
-    println!("{:?}", x);
-
-    let y = ItemBuilder::default()
-        .name("cool item")
-        .category(None)
-        .cost_cents(13u32)
-        .item_id(19124u32)
-        .build();
-    println!("{:?}", y);
 }
