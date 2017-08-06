@@ -235,7 +235,7 @@ mod tests {
     }
 
 
-    //TODO: #[test]
+    #[test]
     fn simple_purchase() {
         let mut backend = build_test_backend();
         backend.persistencer.config.users_in_top_users = 1u8;
