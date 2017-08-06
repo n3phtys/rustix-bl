@@ -14,9 +14,12 @@ fn empty(b: &mut Bencher) {
 
 #[bench]
 fn setup_random_hashmap(b: &mut Bencher) {
-    let mut val : u32 = 0;
+    let mut val: u32 = 0;
     let mut rng = rand::IsaacRng::new_unseeded();
     let mut map = std::collections::HashMap::new();
 
-    b.iter(|| { map.insert(rng.gen::<u8>() as usize, val); val += 1; })
+    b.iter(|| {
+        map.insert(rng.gen::<u8>() as usize, val);
+        val += 1;
+    })
 }

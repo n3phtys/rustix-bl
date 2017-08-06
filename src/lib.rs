@@ -49,14 +49,16 @@ pub fn build_transient_backend_with(
     };
 }
 
-pub fn build_persistent_backend(dir: &std::path::Path) -> Result<rustix_backend::RustixBackend<persistencer::FilePersister>, lmdb::Error> {
+pub fn build_persistent_backend(
+    dir: &std::path::Path,
+) -> Result<rustix_backend::RustixBackend<persistencer::FilePersister>, lmdb::Error> {
     let db_flags: lmdb::DatabaseFlags = lmdb::DatabaseFlags::empty();
     let db_environment = try!(lmdb::Environment::new().set_max_dbs(1).open(dir));
     let database = try!(db_environment.create_db(None, db_flags));
     return Ok(rustix_backend::RustixBackend {
         datastore: datastore::Datastore::default(),
-        persistencer: persistencer::FilePersister{
-            config: config::StaticConfig{
+        persistencer: persistencer::FilePersister {
+            config: config::StaticConfig {
                 users_per_page: 20,
                 users_in_top_users: 20,
                 top_drinks_per_user: 4,
