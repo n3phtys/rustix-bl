@@ -129,6 +129,7 @@ mod tests {
     fn simple_create_user_on_backend() {
         let mut backend = build_test_backend();
         backend.create_user("klaus".to_string());
+        println!("{:?}", backend);
         assert_eq!(backend.datastore.users.len(), 1);
         assert_eq!(backend.datastore.user_id_counter, 1);
         assert_eq!(
