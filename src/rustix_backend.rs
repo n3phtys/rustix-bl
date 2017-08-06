@@ -32,31 +32,10 @@ pub trait WriteBackend {
     fn delete_item(&mut self, item_id: u32) -> ();
 
     fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> ();
+
+    fn reload(&mut self) -> ();
 }
 
-pub trait ReadBackend {
-    //fn get_active_categories() -> &[String];
-
-    //TODO: hashmap user
-
-    //TODO: hashmap bill (including 'empty' bill that is not yet created)
-
-    //TODO: hashmap item
-
-    //TODO: top users list
-
-    //TODO: paginated users
-
-    //TODO: categorized items with Option<String> as key for hashmap
-
-    //TODO: get top items of user
-}
-
-impl<T> ReadBackend for RustixBackend<T>
-where
-    T: persistencer::Persistencer + persistencer::LMDBPersistencer,
-{
-}
 
 
 impl<T> WriteBackend for RustixBackend<T>
@@ -117,6 +96,9 @@ where
             &mut self.datastore,
         );
     }
+    fn reload(&mut self) -> () {
+        self.persistencer.reload_from_filepath(&mut self.datastore);
+    }
 }
 
 
@@ -135,7 +117,6 @@ mod tests {
     use std::collections::HashSet;
 
     use rustix_backend::WriteBackend;
-    use rustix_backend::ReadBackend;
 
     fn build_test_backend() -> RustixBackend<persistencer::TransientPersister> {
         return RustixBackend {
