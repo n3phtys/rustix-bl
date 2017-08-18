@@ -347,8 +347,8 @@ mod tests {
                 .datastore
                 .balance_cost_per_user
                 .get(&0)
-                .unwrap().get(&0).unwrap(),
-            &0u32
+                .is_none(),
+            true
         );
 
 
@@ -357,8 +357,8 @@ mod tests {
                 .datastore
                 .balance_cost_per_user
                 .get(&1)
-                .unwrap().get(&0).unwrap(),
-            &0u32
+                .is_none(),
+            true
         );
 
 
@@ -376,7 +376,7 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().sum_of_cost_hash_map.get(&1).is_none(),
+                .unwrap().sum_of_cost_hash_map.get(&1).unwrap().is_empty(),
             true
         );
         assert_eq!(
@@ -384,7 +384,7 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().count_hash_map.get(&0).unwrap().get(&0).unwrap(),
+                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
             &1u32
         );
         assert_eq!(
@@ -439,7 +439,7 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().sum_of_cost_hash_map.get(&1).is_none(),
+                .unwrap().sum_of_cost_hash_map.get(&1).unwrap().is_empty(),
             true
         );
         assert_eq!(
@@ -447,7 +447,7 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().count_hash_map.get(&0).unwrap().get(&0).unwrap(),
+                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
             &1u32
         );
         assert_eq!(
