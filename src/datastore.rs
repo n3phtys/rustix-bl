@@ -12,10 +12,13 @@ pub struct Datastore {
     pub users: HashMap<u32, User>,
     pub items: HashMap<u32, Item>,
     pub purchases: Vec<Purchase>,
+    pub bills: Vec<Bill>,
     pub top_user_scores: ScoredIdTreeMock,
     pub top_users: HashSet<u32>,
     pub top_drinks_per_user: HashMap<u32, HashSet<u32>>,
     pub drink_scores_per_user: HashMap<u32, ScoredIdTreeMock>,
+    pub balance_cost_per_user: HashMap<u32, HashMap<u32, u32>>,
+    pub balance_count_per_user: HashMap<u32, HashMap<u32, u32>>,
 
     // keeps hashmap of user_id => user
     // keeps hashmap of user_id => user
@@ -58,10 +61,13 @@ impl Default for Datastore {
             users: HashMap::new(),
             items: HashMap::new(),
             purchases: Vec::new(),
+            bills: Vec::new(),
             top_user_scores: ScoredIdTreeMock::default(),
             top_users: HashSet::new(),
             top_drinks_per_user: HashMap::new(),
             drink_scores_per_user: HashMap::new(),
+            balance_cost_per_user: HashMap::new(),
+            balance_count_per_user: HashMap::new(),
             user_id_counter: 0,
             item_id_counter: 0,
             categories: HashSet::new(),
@@ -112,6 +118,8 @@ pub struct Item {
 pub struct Bill {
     pub timestamp_seconds: u32,
     pub users: UserGroup,
+    pub count_hash_map: HashMap<u32, HashMap<u32, u32>>,
+    pub sum_of_cost_hash_map: HashMap<u32, HashMap<u32, u32>>,
     pub comment: String,
 }
 

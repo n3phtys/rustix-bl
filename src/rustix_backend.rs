@@ -37,10 +37,9 @@ pub trait WriteBackend {
 }
 
 
-
 impl<T> WriteBackend for RustixBackend<T>
-where
-    T: persistencer::Persistencer + persistencer::LMDBPersistencer,
+    where
+        T: persistencer::Persistencer + persistencer::LMDBPersistencer,
 {
     fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
         self.persistencer.test_store_apply(
@@ -79,7 +78,6 @@ where
     }
 
     fn delete_item(&mut self, item_id: u32) -> () {
-
         self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::DeleteItem { item_id: item_id },
             &mut self.datastore,
@@ -105,7 +103,6 @@ where
 //TODO: write full test suite in here, testing without file persistencer
 
 
-
 #[cfg(test)]
 mod tests {
     use rustix_event_shop::BLEvents;
@@ -115,6 +112,7 @@ mod tests {
     use datastore;
     use persistencer;
     use std::collections::HashSet;
+    use datastore::UserGroup::AllUsers;
 
     use rustix_backend::WriteBackend;
 
@@ -215,7 +213,6 @@ mod tests {
             "Alcohol".to_string()
         );
         assert_eq!(backend.datastore.categories.len(), 1);
-
     }
 
 
@@ -298,16 +295,192 @@ mod tests {
         );
     }
 
-    //TODO: #[test]
+    #[test]
     fn simple_create_bill() {
-        //let mut backend = build_test_backend();
-        //TODO: create two users, create three items, make 1 user purchase 2 items but not the third
+        let mut backend = build_test_backend();
+        //create two users, create three items, make 1 user purchase 2 items but not the third
+        backend.create_user("user a".to_string());
+        backend.create_user("user b".to_string());
+        backend.create_item("item 1".to_string(), 45, None);
+        backend.create_item("item 2".to_string(), 55, Some("category a".to_string()));
+        backend.create_item("item 3".to_string(), 75, Some("category b".to_string()));
 
-        //TODO: create a bill
+        backend.purchase(0, 0, 10);
+        backend.purchase(0, 1, 20);
+        backend.purchase(0, 0, 30);
 
-        //TODO: control that current balance is down
+        assert_eq!(
+            backend
+                .datastore
+                .balance_cost_per_user
+                .get(&0)
+                .unwrap().get(&0).unwrap(),
+            &90u32
+        );
 
-        //TODO: control that bill contains correct data
+        assert_eq!(
+            backend
+                .datastore
+                .balance_cost_per_user
+                .get(&0)
+                .unwrap().get(&1).unwrap(),
+            &55u32
+        );
+
+
+        assert_eq!(
+            backend
+                .datastore
+                .balance_cost_per_user
+                .get(&1).is_none(),
+            true
+        );
+
+
+        //create a bill
+        backend.create_bill(100, AllUsers, "remark of bill".to_string());
+
+        //control that current balance is down to zero for all users
+
+        assert_eq!(
+            backend
+                .datastore
+                .balance_cost_per_user
+                .get(&0)
+                .unwrap().get(&0).unwrap(),
+            &0u32
+        );
+
+
+        assert_eq!(
+            backend
+                .datastore
+                .balance_cost_per_user
+                .get(&1)
+                .unwrap().get(&0).unwrap(),
+            &0u32
+        );
+
+
+        //control that bill contains correct data
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().sum_of_cost_hash_map.get(&0).unwrap().get(&0).unwrap(),
+            &90u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().sum_of_cost_hash_map.get(&1).is_none(),
+            true
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().count_hash_map.get(&0).unwrap().get(&0).unwrap(),
+            &1u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
+            &1u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().timestamp_seconds,
+            100u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().users,
+            AllUsers
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().comment,
+            "remark of bill".to_string()
+        );
+
+
+        //add another purchase and assert that bill didn't change
+        backend.purchase(0, 0, 110);
+        backend.purchase(1, 2, 120);
+        backend.purchase(1, 0, 130);
+
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().sum_of_cost_hash_map.get(&0).unwrap().get(&0).unwrap(),
+            &90u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().sum_of_cost_hash_map.get(&1).is_none(),
+            true
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().count_hash_map.get(&0).unwrap().get(&0).unwrap(),
+            &1u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
+            &1u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().timestamp_seconds,
+            100u32
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().users,
+            AllUsers
+        );
+        assert_eq!(
+            backend
+                .datastore
+                .bills
+                .get(0)
+                .unwrap().comment,
+            "remark of bill".to_string()
+        );
     }
-
 }

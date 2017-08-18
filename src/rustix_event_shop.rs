@@ -14,6 +14,7 @@ use left_threaded_avl_tree::AVLTree;
 use left_threaded_avl_tree::ScoredIdTreeMock;
 
 use std::collections::HashSet;
+use std::collections::HashMap;
 use std::iter::FromIterator;
 use serde_json;
 use std;
@@ -138,7 +139,40 @@ impl Event for BLEvents {
                 timestamp,
                 ref user_ids,
                 ref comment,
-            } => unimplemented!(),//TODO:
+            } => {
+                let user_ids_copy: datastore::UserGroup = user_ids.clone();
+                let user_ids_other_copy: datastore::UserGroup = user_ids.clone();
+
+                let mut counts: HashMap<u32, HashMap<u32, u32>> = HashMap::new();
+                let mut costs: HashMap<u32, HashMap<u32, u32>> = HashMap::new();
+
+                match user_ids_copy {
+                    datastore::UserGroup::AllUsers => {
+                        for user_id in store.users.keys() {
+                            counts.insert(*user_id, store.balance_count_per_user.remove(user_id).unwrap_or(HashMap::new()));
+                            costs.insert(*user_id, store.balance_cost_per_user.remove(user_id).unwrap_or(HashMap::new()));
+                        }
+                    }
+                    datastore::UserGroup::SingleUser { user_id } => {
+                        counts.insert(user_id, store.balance_count_per_user.remove(&user_id).unwrap_or(HashMap::new()));
+                        costs.insert(user_id, store.balance_cost_per_user.remove(&user_id).unwrap_or(HashMap::new()));
+                    }
+                    datastore::UserGroup::MultipleUsers { ref user_ids } => {
+                        for user_id in user_ids {
+                            counts.insert(*user_id, store.balance_count_per_user.remove(&user_id).unwrap_or(HashMap::new()));
+                            costs.insert(*user_id, store.balance_cost_per_user.remove(&user_id).unwrap_or(HashMap::new()));
+                        }
+                    }
+                };
+
+                store.bills.push(datastore::Bill {
+                    timestamp_seconds: timestamp,
+                    users: user_ids_other_copy,
+                    count_hash_map: counts,
+                    sum_of_cost_hash_map: costs,
+                    comment: comment.to_string(),
+                });
+            }
             &BLEvents::DeleteItem { item_id } => {
                 let v = store.items.remove(&item_id);
                 match v {
@@ -241,12 +275,24 @@ impl Event for BLEvents {
                 }
                 println!("New User Scores: {:?}", store.top_user_scores);
                 println!("New Top Users: {:?}", store.top_users);
+
+                //increase cost map value
+                let alt_hashmap_1 = HashMap::new();
+                let mut old_cost_map = store.balance_cost_per_user.remove(&user_id).unwrap_or(alt_hashmap_1);
+                let old_cost_value = *old_cost_map.get(&item_id).unwrap_or(&0);
+                old_cost_map.insert(item_id, old_cost_value + store.items.get(&item_id).map(|item| item.cost_cents).unwrap_or(0));
+                store.balance_cost_per_user.insert(user_id, old_cost_map);
+
+                //increase count map value
+                let alt_hashmap_2 = HashMap::new();
+                let mut old_count_map = store.balance_count_per_user.remove(&user_id).unwrap_or(alt_hashmap_2);
+                let old_count_value = *old_count_map.get(&item_id).unwrap_or(&0);
+                old_count_map.insert(item_id, old_count_value + 1);
+                store.balance_count_per_user.insert(user_id, old_count_map);
             }
         };
     }
 }
-
-//TODO: finish declaring all possible events here
 
 
 #[cfg(test)]
