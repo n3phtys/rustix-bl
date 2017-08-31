@@ -125,8 +125,7 @@ impl Persistencer for TransientPersister {
             match self.store_event_in_db(id, event) {
                 Err(e) => return false,
                 Ok(t) => {
-                    event.apply(datastore, &self.config);
-                    return true;
+                    return event.apply(datastore, &self.config);
                 }
             }
         } else {
@@ -184,8 +183,7 @@ impl Persistencer for FilePersister {
             match self.store_event_in_db(id, event) {
                 Err(e) => return false,
                 Ok(t) => {
-                    event.apply(datastore, &self.config);
-                    return true;
+                    return event.apply(datastore, &self.config);
                 }
             }
         } else {

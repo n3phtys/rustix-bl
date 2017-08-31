@@ -24,7 +24,7 @@ use datastore;
 
 pub trait Event {
     fn can_be_applied(&self, store: &Datastore) -> bool;
-    fn apply(&self, store: &mut Datastore, config: &StaticConfig) -> ();
+    fn apply(&self, store: &mut Datastore, config: &StaticConfig) -> bool;
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -79,7 +79,7 @@ impl Event for BLEvents {
         };
     }
 
-    fn apply(&self, store: &mut Datastore, config: &StaticConfig) -> () {
+    fn apply(&self, store: &mut Datastore, config: &StaticConfig) -> bool {
         return match self {
             &BLEvents::CreateItem {
                 ref itemname,
@@ -104,6 +104,8 @@ impl Event for BLEvents {
                 for (_, value) in &mut store.drink_scores_per_user {
                     (*value).insert(id);
                 }
+
+                true
             }
             &BLEvents::CreateUser { ref username } => {
                 let id = store.user_id_counter;
@@ -134,6 +136,8 @@ impl Event for BLEvents {
                         .extract_top(config.users_in_top_users)
                         .as_slice(),
                 );
+
+                true
             }
             &BLEvents::CreateBill {
                 timestamp,
@@ -172,6 +176,7 @@ impl Event for BLEvents {
                     sum_of_cost_hash_map: costs,
                     comment: comment.to_string(),
                 });
+                true
             }
             &BLEvents::DeleteItem { item_id } => {
                 let v = store.items.remove(&item_id);
@@ -206,6 +211,7 @@ impl Event for BLEvents {
                         }
                     }
                 }
+                true
             }
             &BLEvents::DeleteUser { user_id } => {
                 //remove from user hashmap
@@ -228,6 +234,9 @@ impl Event for BLEvents {
                             .extract_top(config.users_in_top_users as usize)
                             .as_slice(),
                     );
+                    true
+                } else {
+                    false
                 }
             }
             &BLEvents::MakeSimplePurchase {
@@ -241,6 +250,8 @@ impl Event for BLEvents {
                     item_id: item_id,
                     consumer_id: user_id,
                 });
+
+                let was_in_before = store.top_users.contains(&user_id);
 
                 // increase item score for user
                 if let Some(ref mut drinkscore) = store.drink_scores_per_user.get_mut(&user_id) {
@@ -289,6 +300,11 @@ impl Event for BLEvents {
                 let old_count_value = *old_count_map.get(&item_id).unwrap_or(&0);
                 old_count_map.insert(item_id, old_count_value + 1);
                 store.balance_count_per_user.insert(user_id, old_count_map);
+
+
+                let is_in_now = store.top_users.contains(&user_id);
+
+                ((!was_in_before) & (is_in_now))
             }
         };
     }

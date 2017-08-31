@@ -24,14 +24,14 @@ pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersi
 */
 
 pub trait WriteBackend {
-    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> ();
-    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> ();
-    fn create_user(&mut self, username: String) -> ();
+    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> bool;
+    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> bool;
+    fn create_user(&mut self, username: String) -> bool;
 
-    fn delete_user(&mut self, user_id: u32) -> ();
-    fn delete_item(&mut self, item_id: u32) -> ();
+    fn delete_user(&mut self, user_id: u32) -> bool;
+    fn delete_item(&mut self, item_id: u32) -> bool;
 
-    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> ();
+    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> bool;
 
     fn reload(&mut self) -> Result<u32, persistencer::RustixError>;
 }
@@ -41,8 +41,8 @@ impl<T> WriteBackend for RustixBackend<T>
     where
         T: persistencer::Persistencer + persistencer::LMDBPersistencer,
 {
-    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> () {
-        self.persistencer.test_store_apply(
+    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> bool {
+        return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateBill {
                 timestamp: timestamp,
                 user_ids: user_ids,
@@ -52,8 +52,8 @@ impl<T> WriteBackend for RustixBackend<T>
         );
     }
 
-    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> () {
-        self.persistencer.test_store_apply(
+    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> bool {
+        return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateItem {
                 itemname: itemname,
                 price_cents: price_cents,
@@ -63,29 +63,29 @@ impl<T> WriteBackend for RustixBackend<T>
         );
     }
 
-    fn create_user(&mut self, username: String) -> () {
-        self.persistencer.test_store_apply(
+    fn create_user(&mut self, username: String) -> bool {
+        return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateUser { username: username },
             &mut self.datastore,
         );
     }
 
-    fn delete_user(&mut self, user_id: u32) -> () {
-        self.persistencer.test_store_apply(
+    fn delete_user(&mut self, user_id: u32) -> bool {
+        return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::DeleteUser { user_id: user_id },
             &mut self.datastore,
         );
     }
 
-    fn delete_item(&mut self, item_id: u32) -> () {
-        self.persistencer.test_store_apply(
+    fn delete_item(&mut self, item_id: u32) -> bool {
+        return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::DeleteItem { item_id: item_id },
             &mut self.datastore,
         );
     }
 
-    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> () {
-        self.persistencer.test_store_apply(
+    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> bool {
+        return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::MakeSimplePurchase {
                 user_id: user_id,
                 item_id: item_id,
@@ -250,13 +250,14 @@ mod tests {
             "Beginning simple purchase test with datastore={:?}",
             backend.datastore
         );
-        backend.purchase(0, 0, 12345678u32);
+        assert_eq!(backend.purchase(0, 0, 12345678u32), false);
         assert_eq!(backend.datastore.purchases.len(), 1);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
 
         //make second purchase by B
-        backend.purchase(1, 0, 12345878u32);
+
+        assert_eq!(backend.purchase(1, 0, 12345878u32), false);
         assert_eq!(backend.datastore.purchases.len(), 2);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
