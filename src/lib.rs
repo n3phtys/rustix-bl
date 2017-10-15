@@ -32,6 +32,7 @@ pub mod config;
 
 
 use std::collections::HashSet;
+use config::StaticConfig;
 
 pub fn build_transient_backend()
     -> rustix_backend::RustixBackend<persistencer::TransientPersister>
@@ -45,7 +46,14 @@ pub fn build_transient_backend_with(
 ) -> rustix_backend::RustixBackend<persistencer::TransientPersister> {
     return rustix_backend::RustixBackend {
         datastore: datastore::Datastore::default(),
-        persistencer: persistencer::TransientPersister::default(),
+        persistencer: persistencer::TransientPersister {
+            config: StaticConfig {
+                users_per_page: users_per_page as usize,
+                users_in_top_users: top_users as usize,
+                top_drinks_per_user: 4,
+            },
+            events_stored: 0,
+        },
     };
 }
 

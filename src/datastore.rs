@@ -99,6 +99,10 @@ pub struct User {
     pub user_id: u32,
     //subuser_to: Option<u32>, //TODO: implement to group users
     pub is_billed: bool,
+
+
+    //pub cents_since_last_bill: u64,
+    //pub cents_since_creation: u64,
 }
 
 
