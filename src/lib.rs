@@ -9,6 +9,9 @@ pub extern crate serde;
 pub extern crate serde_json;
 pub extern crate lmdb;
 
+
+pub extern crate suffix;
+
 #[macro_use]
 pub extern crate serde_derive;
 pub extern crate bincode;

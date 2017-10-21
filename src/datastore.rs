@@ -5,11 +5,13 @@
 use std::collections::HashSet;
 use std::collections::HashMap;
 use left_threaded_avl_tree::ScoredIdTreeMock;
+use suffix::*;
 
 
 #[derive(Debug)]
 pub struct Datastore {
     pub users: HashMap<u32, User>,
+    pub users_suffix_tree: MockKDTree,
     pub items: HashMap<u32, Item>,
     pub purchases: Vec<Purchase>,
     pub bills: Vec<Bill>,
@@ -55,10 +57,24 @@ impl Itemable for Datastore {
 }
 
 
+impl SearchableElement for User {
+    fn as_searchable_text(&self) -> String {
+        let s: String = self.username.to_string();
+        return s;
+    }
+
+    fn get_id(&self) -> u32 {
+        return self.user_id;
+    }
+}
+
 impl Default for Datastore {
     fn default() -> Self {
+        let empty_user_vec:Vec<User> = Vec::new();
+
         return Datastore {
             users: HashMap::new(),
+            users_suffix_tree: MockKDTree::build(&empty_user_vec, true),
             items: HashMap::new(),
             purchases: Vec::new(),
             bills: Vec::new(),
