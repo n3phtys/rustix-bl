@@ -121,6 +121,16 @@ pub struct User {
     //pub cents_since_creation: u64,
 }
 
+impl Clone for User {
+    fn clone(&self) -> Self {
+        return User{
+            username: self.username.to_string(),
+            user_id: self.user_id,
+            is_billed: self.is_billed,
+        }
+    }
+}
+
 
 
 #[derive(Default, Builder, Debug)]

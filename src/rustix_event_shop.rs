@@ -20,6 +20,7 @@ use serde_json;
 use std;
 use serde_json::Error;
 use datastore;
+use suffix::*;
 
 
 pub trait Event {
@@ -137,6 +138,16 @@ impl Event for BLEvents {
                         .as_slice(),
                 );
 
+                {
+                let mut users_vec: Vec<datastore::User> = vec![];
+
+                for (_, v) in &store.users {
+                    users_vec.push(v.clone());
+                }
+
+                store.users_suffix_tree = MockKDTree::build(&users_vec, false);
+                }
+
                 true
             }
             &BLEvents::CreateBill {
@@ -225,6 +236,18 @@ impl Event for BLEvents {
 
                 //remove from user score tree
                 let _ = store.top_user_scores.remove(user_id);
+
+
+
+                {
+                    let mut users_vec: Vec<datastore::User> = vec![];
+
+                    for (_, v) in &store.users {
+                        users_vec.push(v.clone());
+                    }
+
+                    store.users_suffix_tree = MockKDTree::build(&users_vec, false);
+                }
 
                 //remove from top users and renew topusers if that is the case
                 if store.top_users.remove(&user_id) {
@@ -397,5 +420,6 @@ mod tests {
             serde_json::from_str(std::str::from_utf8(json_bytes.as_ref()).unwrap()).unwrap();
         println!("{:#?}", reparsed_content);
         assert_eq!(reparsed_content, v);
+
     }
 }

@@ -113,6 +113,7 @@ mod tests {
     use persistencer;
     use std::collections::HashSet;
     use datastore::UserGroup::AllUsers;
+    use suffix::KDTree;
 
     use rustix_backend::WriteBackend;
 
@@ -305,6 +306,18 @@ mod tests {
         backend.create_item("item 1".to_string(), 45, None);
         backend.create_item("item 2".to_string(), 55, Some("category a".to_string()));
         backend.create_item("item 3".to_string(), 75, Some("category b".to_string()));
+
+
+        {
+            let a = backend.datastore.users_suffix_tree.search("user");
+            let b = backend.datastore.users_suffix_tree.search("user a");
+            let c = backend.datastore.users_suffix_tree.search("");
+
+            assert_eq!(a.len(), 2);
+            assert_eq!(b.len(), 1);
+            assert_eq!(c.len(), 2);
+        }
+
 
         backend.purchase(0, 0, 10);
         backend.purchase(0, 1, 20);
