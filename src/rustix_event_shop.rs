@@ -139,13 +139,13 @@ impl Event for BLEvents {
                 );
 
                 {
-                let mut users_vec: Vec<datastore::User> = vec![];
+                    let mut users_vec: Vec<datastore::User> = vec![];
 
-                for (_, v) in &store.users {
-                    users_vec.push(v.clone());
-                }
+                    for (_, v) in &store.users {
+                        users_vec.push(v.clone());
+                    }
 
-                store.users_suffix_tree = MockKDTree::build(&users_vec, false);
+                    store.users_suffix_tree = MockKDTree::build(&users_vec, false);
                 }
 
                 true
@@ -162,22 +162,55 @@ impl Event for BLEvents {
                 let mut costs: HashMap<u32, HashMap<u32, u32>> = HashMap::new();
 
                 match user_ids_copy {
-                    datastore::UserGroup::AllUsers => {
-                        for user_id in store.users.keys() {
-                            counts.insert(*user_id, store.balance_count_per_user.remove(user_id).unwrap_or(HashMap::new()));
-                            costs.insert(*user_id, store.balance_cost_per_user.remove(user_id).unwrap_or(HashMap::new()));
-                        }
-                    }
+                    datastore::UserGroup::AllUsers => for user_id in store.users.keys() {
+                        counts.insert(
+                            *user_id,
+                            store
+                                .balance_count_per_user
+                                .remove(user_id)
+                                .unwrap_or(HashMap::new()),
+                        );
+                        costs.insert(
+                            *user_id,
+                            store
+                                .balance_cost_per_user
+                                .remove(user_id)
+                                .unwrap_or(HashMap::new()),
+                        );
+                    },
                     datastore::UserGroup::SingleUser { user_id } => {
-                        counts.insert(user_id, store.balance_count_per_user.remove(&user_id).unwrap_or(HashMap::new()));
-                        costs.insert(user_id, store.balance_cost_per_user.remove(&user_id).unwrap_or(HashMap::new()));
+                        counts.insert(
+                            user_id,
+                            store
+                                .balance_count_per_user
+                                .remove(&user_id)
+                                .unwrap_or(HashMap::new()),
+                        );
+                        costs.insert(
+                            user_id,
+                            store
+                                .balance_cost_per_user
+                                .remove(&user_id)
+                                .unwrap_or(HashMap::new()),
+                        );
                     }
-                    datastore::UserGroup::MultipleUsers { ref user_ids } => {
-                        for user_id in user_ids {
-                            counts.insert(*user_id, store.balance_count_per_user.remove(&user_id).unwrap_or(HashMap::new()));
-                            costs.insert(*user_id, store.balance_cost_per_user.remove(&user_id).unwrap_or(HashMap::new()));
-                        }
-                    }
+                    datastore::UserGroup::MultipleUsers { ref user_ids } => for user_id in user_ids
+                    {
+                        counts.insert(
+                            *user_id,
+                            store
+                                .balance_count_per_user
+                                .remove(&user_id)
+                                .unwrap_or(HashMap::new()),
+                        );
+                        costs.insert(
+                            *user_id,
+                            store
+                                .balance_cost_per_user
+                                .remove(&user_id)
+                                .unwrap_or(HashMap::new()),
+                        );
+                    },
                 };
 
                 store.bills.push(datastore::Bill {
@@ -312,14 +345,28 @@ impl Event for BLEvents {
 
                 //increase cost map value
                 let alt_hashmap_1 = HashMap::new();
-                let mut old_cost_map = store.balance_cost_per_user.remove(&user_id).unwrap_or(alt_hashmap_1);
+                let mut old_cost_map = store
+                    .balance_cost_per_user
+                    .remove(&user_id)
+                    .unwrap_or(alt_hashmap_1);
                 let old_cost_value = *old_cost_map.get(&item_id).unwrap_or(&0);
-                old_cost_map.insert(item_id, old_cost_value + store.items.get(&item_id).map(|item| item.cost_cents).unwrap_or(0));
+                old_cost_map.insert(
+                    item_id,
+                    old_cost_value
+                        + store
+                            .items
+                            .get(&item_id)
+                            .map(|item| item.cost_cents)
+                            .unwrap_or(0),
+                );
                 store.balance_cost_per_user.insert(user_id, old_cost_map);
 
                 //increase count map value
                 let alt_hashmap_2 = HashMap::new();
-                let mut old_count_map = store.balance_count_per_user.remove(&user_id).unwrap_or(alt_hashmap_2);
+                let mut old_count_map = store
+                    .balance_count_per_user
+                    .remove(&user_id)
+                    .unwrap_or(alt_hashmap_2);
                 let old_count_value = *old_count_map.get(&item_id).unwrap_or(&0);
                 old_count_map.insert(item_id, old_count_value + 1);
                 store.balance_count_per_user.insert(user_id, old_count_map);
@@ -420,6 +467,5 @@ mod tests {
             serde_json::from_str(std::str::from_utf8(json_bytes.as_ref()).unwrap()).unwrap();
         println!("{:#?}", reparsed_content);
         assert_eq!(reparsed_content, v);
-
     }
 }

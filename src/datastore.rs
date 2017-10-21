@@ -70,7 +70,7 @@ impl SearchableElement for User {
 
 impl Default for Datastore {
     fn default() -> Self {
-        let empty_user_vec:Vec<User> = Vec::new();
+        let empty_user_vec: Vec<User> = Vec::new();
 
         return Datastore {
             users: HashMap::new(),
@@ -123,11 +123,11 @@ pub struct User {
 
 impl Clone for User {
     fn clone(&self) -> Self {
-        return User{
+        return User {
             username: self.username.to_string(),
             user_id: self.user_id,
             is_billed: self.is_billed,
-        }
+        };
     }
 }
 

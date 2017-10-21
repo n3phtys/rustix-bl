@@ -25,7 +25,8 @@ pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersi
 
 pub trait WriteBackend {
     fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> bool;
-    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> bool;
+    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>)
+        -> bool;
     fn create_user(&mut self, username: String) -> bool;
 
     fn delete_user(&mut self, user_id: u32) -> bool;
@@ -38,8 +39,8 @@ pub trait WriteBackend {
 
 
 impl<T> WriteBackend for RustixBackend<T>
-    where
-        T: persistencer::Persistencer + persistencer::LMDBPersistencer,
+where
+    T: persistencer::Persistencer + persistencer::LMDBPersistencer,
 {
     fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> bool {
         return self.persistencer.test_store_apply(
@@ -52,7 +53,12 @@ impl<T> WriteBackend for RustixBackend<T>
         );
     }
 
-    fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>) -> bool {
+    fn create_item(
+        &mut self,
+        itemname: String,
+        price_cents: u32,
+        category: Option<String>,
+    ) -> bool {
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateItem {
                 itemname: itemname,
@@ -328,7 +334,9 @@ mod tests {
                 .datastore
                 .balance_cost_per_user
                 .get(&0)
-                .unwrap().get(&0).unwrap(),
+                .unwrap()
+                .get(&0)
+                .unwrap(),
             &90u32
         );
 
@@ -337,16 +345,15 @@ mod tests {
                 .datastore
                 .balance_cost_per_user
                 .get(&0)
-                .unwrap().get(&1).unwrap(),
+                .unwrap()
+                .get(&1)
+                .unwrap(),
             &55u32
         );
 
 
         assert_eq!(
-            backend
-                .datastore
-                .balance_cost_per_user
-                .get(&1).is_none(),
+            backend.datastore.balance_cost_per_user.get(&1).is_none(),
             true
         );
 
@@ -357,21 +364,13 @@ mod tests {
         //control that current balance is down to zero for all users
 
         assert_eq!(
-            backend
-                .datastore
-                .balance_cost_per_user
-                .get(&0)
-                .is_none(),
+            backend.datastore.balance_cost_per_user.get(&0).is_none(),
             true
         );
 
 
         assert_eq!(
-            backend
-                .datastore
-                .balance_cost_per_user
-                .get(&1)
-                .is_none(),
+            backend.datastore.balance_cost_per_user.get(&1).is_none(),
             true
         );
 
@@ -382,7 +381,12 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().sum_of_cost_hash_map.get(&0).unwrap().get(&0).unwrap(),
+                .unwrap()
+                .sum_of_cost_hash_map
+                .get(&0)
+                .unwrap()
+                .get(&0)
+                .unwrap(),
             &90u32
         );
         assert_eq!(
@@ -390,7 +394,11 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().sum_of_cost_hash_map.get(&1).unwrap().is_empty(),
+                .unwrap()
+                .sum_of_cost_hash_map
+                .get(&1)
+                .unwrap()
+                .is_empty(),
             true
         );
         assert_eq!(
@@ -398,7 +406,12 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
+                .unwrap()
+                .count_hash_map
+                .get(&0)
+                .unwrap()
+                .get(&1)
+                .unwrap(),
             &1u32
         );
         assert_eq!(
@@ -406,31 +419,21 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
+                .unwrap()
+                .count_hash_map
+                .get(&0)
+                .unwrap()
+                .get(&1)
+                .unwrap(),
             &1u32
         );
         assert_eq!(
-            backend
-                .datastore
-                .bills
-                .get(0)
-                .unwrap().timestamp_seconds,
+            backend.datastore.bills.get(0).unwrap().timestamp_seconds,
             100u32
         );
+        assert_eq!(backend.datastore.bills.get(0).unwrap().users, AllUsers);
         assert_eq!(
-            backend
-                .datastore
-                .bills
-                .get(0)
-                .unwrap().users,
-            AllUsers
-        );
-        assert_eq!(
-            backend
-                .datastore
-                .bills
-                .get(0)
-                .unwrap().comment,
+            backend.datastore.bills.get(0).unwrap().comment,
             "remark of bill".to_string()
         );
 
@@ -445,7 +448,12 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().sum_of_cost_hash_map.get(&0).unwrap().get(&0).unwrap(),
+                .unwrap()
+                .sum_of_cost_hash_map
+                .get(&0)
+                .unwrap()
+                .get(&0)
+                .unwrap(),
             &90u32
         );
         assert_eq!(
@@ -453,7 +461,11 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().sum_of_cost_hash_map.get(&1).unwrap().is_empty(),
+                .unwrap()
+                .sum_of_cost_hash_map
+                .get(&1)
+                .unwrap()
+                .is_empty(),
             true
         );
         assert_eq!(
@@ -461,7 +473,12 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
+                .unwrap()
+                .count_hash_map
+                .get(&0)
+                .unwrap()
+                .get(&1)
+                .unwrap(),
             &1u32
         );
         assert_eq!(
@@ -469,31 +486,21 @@ mod tests {
                 .datastore
                 .bills
                 .get(0)
-                .unwrap().count_hash_map.get(&0).unwrap().get(&1).unwrap(),
+                .unwrap()
+                .count_hash_map
+                .get(&0)
+                .unwrap()
+                .get(&1)
+                .unwrap(),
             &1u32
         );
         assert_eq!(
-            backend
-                .datastore
-                .bills
-                .get(0)
-                .unwrap().timestamp_seconds,
+            backend.datastore.bills.get(0).unwrap().timestamp_seconds,
             100u32
         );
+        assert_eq!(backend.datastore.bills.get(0).unwrap().users, AllUsers);
         assert_eq!(
-            backend
-                .datastore
-                .bills
-                .get(0)
-                .unwrap().users,
-            AllUsers
-        );
-        assert_eq!(
-            backend
-                .datastore
-                .bills
-                .get(0)
-                .unwrap().comment,
+            backend.datastore.bills.get(0).unwrap().comment,
             "remark of bill".to_string()
         );
     }

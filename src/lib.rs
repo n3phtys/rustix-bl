@@ -5,16 +5,16 @@
 
 #[macro_use]
 pub extern crate derive_builder;
+pub extern crate lmdb;
 pub extern crate serde;
 pub extern crate serde_json;
-pub extern crate lmdb;
 
 
 pub extern crate suffix;
 
+pub extern crate bincode;
 #[macro_use]
 pub extern crate serde_derive;
-pub extern crate bincode;
 
 #[macro_use]
 pub extern crate quick_error;
@@ -37,8 +37,7 @@ pub mod config;
 use std::collections::HashSet;
 use config::StaticConfig;
 
-pub fn build_transient_backend()
-    -> rustix_backend::RustixBackend<persistencer::TransientPersister>
+pub fn build_transient_backend() -> rustix_backend::RustixBackend<persistencer::TransientPersister>
 {
     return build_transient_backend_with(20, 20);
 }
@@ -125,8 +124,6 @@ mod tests {
 
     #[test]
     fn it_reload_added_user() {
-
-
         /*{
 
 

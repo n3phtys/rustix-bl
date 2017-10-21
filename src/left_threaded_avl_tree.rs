@@ -127,7 +127,6 @@ mod tests {
     }
     #[test]
     fn basic_removal_works() {
-
         let mut tree = ScoredIdTreeMock::default();
         tree.insert(1);
         tree.insert(1);
@@ -148,6 +147,5 @@ mod tests {
         assert_eq!(tree.ids.len(), 1);
         assert_eq!(tree.scores.len(), 1);
         assert_eq!(out.len(), 1);
-
     }
 }
