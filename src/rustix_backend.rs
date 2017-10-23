@@ -32,7 +32,9 @@ pub trait WriteBackend {
     fn delete_user(&mut self, user_id: u32) -> bool;
     fn delete_item(&mut self, item_id: u32) -> bool;
 
-    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> bool;
+    fn purchase(&mut self, user_id: u32, item_id: u32, millis_timestamp: i64) -> bool;
+
+    fn undo_purchase(&mut self, user_id: u64) -> bool;
 
     fn reload(&mut self) -> Result<u32, persistencer::RustixError>;
 }
@@ -90,18 +92,21 @@ where
         );
     }
 
-    fn purchase(&mut self, user_id: u32, item_id: u32, timestamp: u32) -> bool {
+    fn purchase(&mut self, user_id: u32, item_id: u32, millis_timestamp: i64) -> bool {
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::MakeSimplePurchase {
                 user_id: user_id,
                 item_id: item_id,
-                timestamp: timestamp,
+                timestamp: millis_timestamp,
             },
             &mut self.datastore,
         );
     }
     fn reload(&mut self) -> Result<u32, persistencer::RustixError> {
         return self.persistencer.reload_from_filepath(&mut self.datastore);
+    }
+    fn undo_purchase(&mut self, user_id: u64) -> bool {
+        unimplemented!() //TODO: implement
     }
 }
 
@@ -257,20 +262,20 @@ mod tests {
             "Beginning simple purchase test with datastore={:?}",
             backend.datastore
         );
-        assert_eq!(backend.purchase(0, 0, 12345678u32), false);
+        assert_eq!(backend.purchase(0, 0, 12345678i64), false);
         assert_eq!(backend.datastore.purchases.len(), 1);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
 
         //make second purchase by B
 
-        assert_eq!(backend.purchase(1, 0, 12345878u32), false);
+        assert_eq!(backend.purchase(1, 0, 12345878i64), false);
         assert_eq!(backend.datastore.purchases.len(), 2);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
 
         //make third purchase by B
-        backend.purchase(1, 0, 12347878u32);
+        backend.purchase(1, 0, 12347878i64);
 
         //should now be A > B and all data should be correct
         assert_eq!(backend.datastore.purchases.len(), 3);

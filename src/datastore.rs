@@ -14,6 +14,7 @@ pub struct Datastore {
     pub users_suffix_tree: MockKDTree,
     pub items: HashMap<u32, Item>,
     pub purchases: Vec<Purchase>,
+    pub purchase_count: u64,
     pub bills: Vec<Bill>,
     pub top_user_scores: ScoredIdTreeMock,
     pub top_users: HashSet<u32>,
@@ -77,6 +78,7 @@ impl Default for Datastore {
             users_suffix_tree: MockKDTree::build(&empty_user_vec, true),
             items: HashMap::new(),
             purchases: Vec::new(),
+            purchase_count: 0,
             bills: Vec::new(),
             top_user_scores: ScoredIdTreeMock::default(),
             top_users: HashSet::new(),
@@ -162,8 +164,12 @@ pub enum Purchase {
         name: String,
         consumer_id: u32,
     },*/
+    UndoPurchase {
+        unique_id: u64,
+    },
     SimplePurchase {
-        timestamp_seconds: u32,
+        unique_id: u64,
+        timestamp_epoch_millis: i64,
         item_id: u32, //buys one instance of this item
         consumer_id: u32,
     }, /*,
