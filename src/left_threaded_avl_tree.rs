@@ -14,7 +14,7 @@ pub trait AVLTree {
     fn extract_top(&self, n: usize) -> Vec<u32>;
 }
 
-#[derive(Builder, Debug)]
+#[derive(Builder, Debug, Serialize, Deserialize)]
 pub struct ScoredIdTreeMock {
     ids: Vec<u32>,    //just to mock it
     scores: Vec<u32>, //just to mock it

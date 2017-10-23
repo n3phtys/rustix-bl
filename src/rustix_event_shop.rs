@@ -43,9 +43,7 @@ pub enum BLEvents {
         item_id: u32,
         timestamp: i64,
     },
-    UndoPurchase {
-        unique_id: u64,
-    },
+    UndoPurchase { unique_id: u64 },
     CreateBill {
         timestamp: u32,
         user_ids: UserGroup,
@@ -80,9 +78,7 @@ impl Event for BLEvents {
                 item_id,
                 timestamp,
             } => store.has_item(item_id) && store.has_user(user_id),
-            &BLEvents::UndoPurchase {
-                unique_id,
-            } => store.purchase_count >= unique_id,
+            &BLEvents::UndoPurchase { unique_id } => store.purchase_count >= unique_id,
         };
     }
 
@@ -306,8 +302,7 @@ impl Event for BLEvents {
                 item_id,
                 timestamp,
             } => {
-
-                let idx : u64 = store.purchase_count + 1;
+                let idx: u64 = store.purchase_count + 1;
                 store.purchase_count = idx;
 
                 // add purchase to vector
@@ -386,10 +381,8 @@ impl Event for BLEvents {
                 let is_in_now = store.top_users.contains(&user_id);
 
                 ((!was_in_before) & (is_in_now))
-            },
-            &BLEvents::UndoPurchase {
-                unique_id,
-            } => unimplemented!(),
+            }
+            &BLEvents::UndoPurchase { unique_id } => unimplemented!(),
         };
     }
 }

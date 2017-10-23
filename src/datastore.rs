@@ -8,7 +8,7 @@ use left_threaded_avl_tree::ScoredIdTreeMock;
 use suffix::*;
 
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Datastore {
     pub users: HashMap<u32, User>,
     pub users_suffix_tree: MockKDTree,
@@ -109,7 +109,7 @@ impl Default for UserGroup {
 }
 
 
-#[derive(Default, Builder, Debug, PartialEq)]
+#[derive(Default, Builder, Debug, Serialize, Deserialize, PartialEq)]
 #[builder(setter(into))]
 pub struct User {
     pub username: String,
@@ -135,7 +135,7 @@ impl Clone for User {
 
 
 
-#[derive(Default, Builder, Debug)]
+#[derive(Default, Builder, Debug, Serialize, Deserialize)]
 #[builder(setter(into))]
 pub struct Item {
     pub name: String,
@@ -145,7 +145,7 @@ pub struct Item {
 }
 
 
-#[derive(Default, Builder, Debug)]
+#[derive(Default, Builder, Debug, Serialize, Deserialize)]
 #[builder(setter(into))]
 pub struct Bill {
     pub timestamp_seconds: u32,
@@ -157,16 +157,14 @@ pub struct Bill {
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Purchase {
     /* SpecialPurchase {
         timestamp_seconds: u32,
         name: String,
         consumer_id: u32,
     },*/
-    UndoPurchase {
-        unique_id: u64,
-    },
+    UndoPurchase { unique_id: u64 },
     SimplePurchase {
         unique_id: u64,
         timestamp_epoch_millis: i64,
