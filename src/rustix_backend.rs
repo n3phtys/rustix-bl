@@ -124,7 +124,7 @@ mod tests {
     use persistencer;
     use std::collections::HashSet;
     use datastore::UserGroup::AllUsers;
-    use suffix::KDTree;
+    use suffix_rs::KDTree;
 
     use rustix_backend::WriteBackend;
 
