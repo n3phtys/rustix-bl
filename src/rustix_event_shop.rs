@@ -20,7 +20,7 @@ use serde_json;
 use std;
 use serde_json::Error;
 use datastore;
-use suffix::*;
+use suffix_rs::*;
 
 
 pub trait Event {

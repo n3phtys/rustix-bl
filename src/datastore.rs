@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 use std::collections::HashMap;
 use left_threaded_avl_tree::ScoredIdTreeMock;
-use suffix::*;
+use suffix_rs::*;
 
 
 #[derive(Debug, Serialize, Deserialize)]

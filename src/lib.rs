@@ -10,7 +10,7 @@ pub extern crate serde;
 pub extern crate serde_json;
 
 
-pub extern crate suffix;
+pub extern crate suffix_rs;
 
 pub extern crate bincode;
 #[macro_use]
