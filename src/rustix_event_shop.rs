@@ -20,6 +20,7 @@ use serde_json;
 use std;
 use serde_json::Error;
 use datastore;
+use datastore::*;
 use suffix_rs::*;
 
 
@@ -382,7 +383,47 @@ impl Event for BLEvents {
 
                 ((!was_in_before) & (is_in_now))
             }
-            &BLEvents::UndoPurchase { unique_id } => unimplemented!(),
+
+            //should return true if it was the most recent purchase
+            &BLEvents::UndoPurchase { unique_id } => {
+                //remove purchase from list
+                let index = store
+                    .purchases
+                    .iter()
+                    .position(|x| x.has_unique_id(unique_id))
+                    .unwrap();
+                let old_size = store.purchases.len();
+                let element = store.purchases.remove(index);
+
+                //remove cost and count lists:
+                let oldcost = *store
+                    .balance_cost_per_user
+                    .get(element.get_user_id())
+                    .unwrap()
+                    .get(element.get_item_id())
+                    .unwrap();
+                let oldcount = *store
+                    .balance_count_per_user
+                    .get(element.get_user_id())
+                    .unwrap()
+                    .get(element.get_item_id())
+                    .unwrap();
+
+
+                store
+                    .balance_cost_per_user
+                    .get_mut(element.get_user_id())
+                    .unwrap()
+                    .insert(*element.get_item_id(), oldcost - 1);
+                store
+                    .balance_count_per_user
+                    .get_mut(element.get_user_id())
+                    .unwrap()
+                    .insert(*element.get_item_id(), oldcount - 1);
+
+
+                old_size == index + 1
+            }
         };
     }
 }

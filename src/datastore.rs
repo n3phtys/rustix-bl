@@ -184,6 +184,13 @@ pub struct Bill {
 }
 
 
+pub trait PurchaseFunctions {
+    fn get_unique_id(&self) -> u64;
+    fn has_unique_id(&self, other: u64) -> bool;
+    fn get_user_id(&self) -> &u32;
+    fn get_item_id(&self) -> &u32;
+}
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Purchase {
@@ -205,4 +212,68 @@ pub enum Purchase {
         consumer_id: u32,
         payer_id: u32, //paid for by this person
     }*/
+}
+
+
+impl PurchaseFunctions for Purchase {
+    fn get_unique_id(&self) -> u64 {
+        match self {
+            &Purchase::UndoPurchase { ref unique_id } => {
+                return *unique_id;
+            }
+            &Purchase::SimplePurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref consumer_id,
+            } => {
+                return *unique_id;
+            }
+        }
+    }
+
+    fn has_unique_id(&self, other: u64) -> bool {
+        match self {
+            &Purchase::UndoPurchase { ref unique_id } => {
+                return *unique_id == other;
+            }
+            &Purchase::SimplePurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref consumer_id,
+            } => {
+                return *unique_id == other;
+            }
+        }
+    }
+    fn get_user_id(&self) -> &u32 {
+        match self {
+            &Purchase::UndoPurchase { ref unique_id } => {
+                unimplemented!();
+            }
+            &Purchase::SimplePurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref consumer_id,
+            } => {
+                return consumer_id;
+            }
+        }
+    }
+
+    fn get_item_id(&self) -> &u32 {
+        match self {
+            &Purchase::UndoPurchase { ref unique_id } => unimplemented!(),
+            &Purchase::SimplePurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref consumer_id,
+            } => {
+                return item_id;
+            }
+        }
+    }
 }

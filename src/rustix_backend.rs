@@ -34,7 +34,7 @@ pub trait WriteBackend {
 
     fn purchase(&mut self, user_id: u32, item_id: u32, millis_timestamp: i64) -> bool;
 
-    fn undo_purchase(&mut self, user_id: u64) -> bool;
+    fn undo_purchase(&mut self, unique_id: u64) -> bool;
 
     fn reload(&mut self) -> Result<u32, persistencer::RustixError>;
 }
@@ -105,8 +105,13 @@ where
     fn reload(&mut self) -> Result<u32, persistencer::RustixError> {
         return self.persistencer.reload_from_filepath(&mut self.datastore);
     }
-    fn undo_purchase(&mut self, user_id: u64) -> bool {
-        unimplemented!() //TODO: implement
+    fn undo_purchase(&mut self, unique_id: u64) -> bool {
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::UndoPurchase {
+                unique_id: unique_id,
+            },
+            &mut self.datastore,
+        );
     }
 }
 
