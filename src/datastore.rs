@@ -46,6 +46,10 @@ pub trait Userable {
     fn has_user(&self, id: u32) -> bool;
 }
 
+pub trait Purchaseable {
+    fn get_purchase(&self, id: u64) -> Option<Purchase>;
+}
+
 impl Userable for Datastore {
     fn has_user(&self, id: u32) -> bool {
         return self.users.contains_key(&id);
@@ -54,6 +58,30 @@ impl Userable for Datastore {
 impl Itemable for Datastore {
     fn has_item(&self, id: u32) -> bool {
         return self.items.contains_key(&id);
+    }
+}
+
+impl Purchaseable for Datastore {
+    fn get_purchase(&self, id: u64) -> Option<Purchase> {
+        for ele in &self.purchases {
+            match ele {
+                &Purchase::SimplePurchase {
+                    ref unique_id,
+                    ref timestamp_epoch_millis,
+                    ref item_id,
+                    ref consumer_id,
+                } => {
+                    return Some(Purchase::SimplePurchase {
+                        unique_id: *unique_id,
+                        timestamp_epoch_millis: *timestamp_epoch_millis,
+                        item_id: *item_id,
+                        consumer_id: *consumer_id,
+                    })
+                }
+                _ => {}
+            }
+        }
+        return None;
     }
 }
 
