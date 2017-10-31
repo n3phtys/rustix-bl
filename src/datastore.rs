@@ -71,12 +71,15 @@ impl Purchaseable for Datastore {
                     ref item_id,
                     ref consumer_id,
                 } => {
-                    return Some(Purchase::SimplePurchase {
-                        unique_id: *unique_id,
-                        timestamp_epoch_millis: *timestamp_epoch_millis,
-                        item_id: *item_id,
-                        consumer_id: *consumer_id,
-                    })
+
+                    if *unique_id == id {
+                        return Some(Purchase::SimplePurchase {
+                            unique_id: *unique_id,
+                            timestamp_epoch_millis: *timestamp_epoch_millis,
+                            item_id: *item_id,
+                            consumer_id: *consumer_id,
+                        })
+                    }
                 }
                 _ => {}
             }
@@ -189,6 +192,7 @@ pub trait PurchaseFunctions {
     fn has_unique_id(&self, other: u64) -> bool;
     fn get_user_id(&self) -> &u32;
     fn get_item_id(&self) -> &u32;
+    fn get_timestamp(&self) -> &i64;
 }
 
 
@@ -273,6 +277,20 @@ impl PurchaseFunctions for Purchase {
                 ref consumer_id,
             } => {
                 return item_id;
+            }
+        }
+    }
+
+    fn get_timestamp(&self) -> &i64 {
+        match self {
+            &Purchase::UndoPurchase { ref unique_id } => unimplemented!(),
+            &Purchase::SimplePurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref consumer_id,
+            } => {
+                return timestamp_epoch_millis;
             }
         }
     }

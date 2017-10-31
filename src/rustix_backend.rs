@@ -130,6 +130,8 @@ mod tests {
     use std::collections::HashSet;
     use datastore::UserGroup::AllUsers;
     use suffix_rs::KDTree;
+    use datastore::Purchaseable;
+    use datastore::PurchaseFunctions;
 
     use rustix_backend::WriteBackend;
 
@@ -311,6 +313,26 @@ mod tests {
                 .unwrap(),
             &0u32
         );
+
+
+        println!("Datastore before search: {:?}", backend.datastore);
+
+        //get purchases
+        assert_eq!(backend.datastore.get_purchase(1).unwrap().get_item_id(), &0u32);
+        assert_eq!(backend.datastore.get_purchase(1).unwrap().get_user_id(), &0u32);
+        assert_eq!(backend.datastore.get_purchase(1).unwrap().get_unique_id(), 1u64);
+        assert_eq!(backend.datastore.get_purchase(2).unwrap().get_item_id(), &0u32);
+        assert_eq!(backend.datastore.get_purchase(2).unwrap().get_user_id(), &1u32);
+        assert_eq!(backend.datastore.get_purchase(2).unwrap().get_unique_id(), 2u64);
+        assert_eq!(backend.datastore.get_purchase(3).unwrap().get_item_id(), &0u32);
+        assert_eq!(backend.datastore.get_purchase(3).unwrap().get_user_id(), &1u32);
+        assert_eq!(backend.datastore.get_purchase(3).unwrap().get_unique_id(), 3u64);
+
+        assert_eq!(backend.datastore.get_purchase(0).is_none(), true);
+
+        assert_eq!(backend.datastore.get_purchase(4).is_none(), true);
+
+
     }
 
     #[test]
