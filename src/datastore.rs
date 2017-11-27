@@ -140,8 +140,7 @@ impl Default for UserGroup {
 }
 
 
-#[derive(Default, Builder, Debug, Serialize, Deserialize, PartialEq)]
-#[builder(setter(into))]
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
 pub struct User {
     pub username: String,
     //external_user_id: u32, //TODO: external_user_id used in external mapping
@@ -166,8 +165,7 @@ impl Clone for User {
 
 
 
-#[derive(Default, Builder, Debug, Serialize, Deserialize)]
-#[builder(setter(into))]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct Item {
     pub name: String,
     pub item_id: u32,
@@ -176,8 +174,7 @@ pub struct Item {
 }
 
 
-#[derive(Default, Builder, Debug, Serialize, Deserialize)]
-#[builder(setter(into))]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct Bill {
     pub timestamp_seconds: u32,
     pub users: UserGroup,
@@ -194,6 +191,301 @@ pub trait PurchaseFunctions {
     fn get_item_id(&self) -> &u32;
     fn get_timestamp(&self) -> &i64;
 }
+
+
+
+
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Freeby {
+    FFA {
+        allowed_categories : Vec<String>,
+        allowed_drinks : Vec<u32>,
+        allowed_number_total : u16,
+        allowed_number_used : u16,
+        text_message : String,
+        created_timestamp : i64,
+        donor : u64,
+    },
+    Transfer {
+        cents_worth_total : u64,
+        cents_worth_used : u64,
+        text_message : String,
+        created_timestamp : i64,
+        donor : u64,
+        recipient : u64,
+    },
+    Classic {
+        allowed_categories : Vec<String>,
+        allowed_drinks : Vec<u32>,
+        allowed_number_total : u16,
+        allowed_number_used : u16,
+        text_message : String,
+        created_timestamp : i64,
+        donor : u64,
+        recipient : u64,
+    },
+}
+
+
+/*
+return match *self {
+            Freeby::Classic {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                uninimplemented!()
+            },
+            Freeby::Transfer{
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                uninimplemented!()
+            },
+            Freeby::FFA {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                uninimplemented!()
+            },
+        };
+*/
+
+
+impl FreebyAble for Freeby {
+    fn message(&self) -> &str {
+        return match *self {
+            Freeby::Classic {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                text_message
+            },
+            Freeby::Transfer{
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                text_message
+            },
+            Freeby::FFA {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                text_message
+            },
+        };
+    }
+
+    fn get_donor(&self) -> u64 {
+        return match *self {
+            Freeby::Classic {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                *donor
+            },
+            Freeby::Transfer{
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                *donor
+            },
+            Freeby::FFA {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                *donor
+            },
+        };
+    }
+
+    fn allowed_categories(&self) -> &[String] {
+        return match *self {
+            Freeby::Classic {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                allowed_categories
+            },
+            Freeby::Transfer{
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                &[]
+            },
+            Freeby::FFA {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                allowed_categories
+            },
+        };
+    }
+
+    fn allowed_items(&self) -> &[u32] {
+        return match *self {
+            Freeby::Classic {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                allowed_drinks
+            },
+            Freeby::Transfer{
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                &[]
+            },
+            Freeby::FFA {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                allowed_drinks
+            },
+        };
+    }
+
+    fn left(&self) -> u16 {
+        return match *self {
+            Freeby::Classic {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                (*allowed_number_total) -  (*allowed_number_used)
+            },
+            Freeby::Transfer{
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                0u16
+            },
+            Freeby::FFA {
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                (*allowed_number_total) -  (*allowed_number_used)
+            },
+        };
+    }
+}
+
+
+pub trait FreebyAble {
+    fn message(&self) -> &str;
+    fn get_donor(&self) -> u64;
+    fn allowed_categories(&self) -> &[String];
+    fn allowed_items(&self) -> &[u32];
+    fn is_open(&self) -> bool {
+        return FreebyAble::left(self) != 0;
+    }
+    fn left(&self) -> u16;
+    fn allows(&self, items: &HashMap<u64, Item>, item_to_allow : &Item) -> bool {
+        for id in self.allowed_items() {
+            if *id == item_to_allow.item_id {
+                return true;
+            }
+        }
+        if let Some(ref cat_to) = item_to_allow.category {
+            for cat in self.allowed_categories() {
+                if cat.eq(cat_to) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+}
+
 
 
 #[derive(Debug, Serialize, Deserialize)]
