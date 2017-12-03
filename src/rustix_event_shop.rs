@@ -109,6 +109,21 @@ impl Event for BLEvents {
                     (*value).insert(id);
                 }
 
+
+
+                {
+                    let mut items_vec: Vec<datastore::Item> = vec![];
+
+                    for (_, v) in &store.items {
+                        let copy : datastore::Item = (v.clone());
+                        items_vec.push(copy);
+                    }
+
+                    store.items_suffix_tree = MockKDTree::build(&items_vec, false);
+                }
+
+                println!("Datastore after Item creation =\n{:?}", store);
+
                 true
             }
             &BLEvents::CreateUser { ref username } => {
@@ -150,6 +165,8 @@ impl Event for BLEvents {
 
                     store.users_suffix_tree = MockKDTree::build(&users_vec, false);
                 }
+
+                println!("Datastore after User creation =\n{:?}", store);
 
                 true
             }

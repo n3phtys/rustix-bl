@@ -23,6 +23,10 @@ pub trait DatastoreQueries {
 }
 
 
+pub trait SuffixTreeRebuildable {
+    fn rebuild_user_tree(&self) -> ();
+    fn rebuild_item_tree(&self) -> ();
+}
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -54,6 +58,17 @@ pub struct Datastore {
 
     pub item_id_counter: u32,
     pub categories: HashSet<String>,
+}
+
+
+impl SuffixTreeRebuildable for Datastore {
+    fn rebuild_user_tree(&self) -> () {
+        unimplemented!()
+    }
+
+    fn rebuild_item_tree(&self) -> () {
+        unimplemented!()
+    }
 }
 
 
@@ -186,6 +201,18 @@ impl SearchableElement for User {
     }
 }
 
+
+impl SearchableElement for Item {
+    fn as_searchable_text(&self) -> String {
+        let s: String = self.name.to_string();
+        return s;
+    }
+
+    fn get_id(&self) -> u32 {
+        return self.item_id;
+    }
+}
+
 impl Default for Datastore {
     fn default() -> Self {
         let empty_user_vec: Vec<User> = Vec::new();
@@ -253,7 +280,7 @@ impl Clone for User {
 
 
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Item {
     pub name: String,
     pub item_id: u32,
@@ -262,7 +289,7 @@ pub struct Item {
 }
 
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Bill {
     pub timestamp_seconds: u32,
     pub users: UserGroup,
