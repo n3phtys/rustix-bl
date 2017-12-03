@@ -6,6 +6,23 @@ use std::collections::HashSet;
 use std::collections::HashMap;
 use left_threaded_avl_tree::ScoredIdTreeMock;
 use suffix_rs::*;
+use suffix_rs::KDTree;
+use left_threaded_avl_tree::AVLTree;
+
+pub trait DatastoreQueries {
+    fn top_user_ids(&self, n : u16) -> Vec<u32>;
+    fn top_item_ids(&self, user_id: u32, n : u8) -> Vec<u32>;
+
+    fn users_searchhit_ids(&self, searchterm: &str) -> Vec<u32>;
+    fn items_searchhit_ids(&self, searchterm: &str) -> Vec<u32>;
+
+    fn personal_log_filtered(&self, user_id: u32, millis_start_inclusive: i64, millis_end_exclusive: i64) -> Vec<Purchase>;
+    fn global_log_filtered(&self, millis_start_inclusive: i64, millis_end_exclusive: i64) -> &[Purchase];
+
+    fn all_categories(&self) -> Vec<String>;
+}
+
+
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,6 +30,7 @@ pub struct Datastore {
     pub users: HashMap<u32, User>,
     pub users_suffix_tree: MockKDTree,
     pub items: HashMap<u32, Item>,
+    pub items_suffix_tree: MockKDTree,
     pub purchases: Vec<Purchase>,
     pub purchase_count: u64,
     pub bills: Vec<Bill>,
@@ -37,6 +55,74 @@ pub struct Datastore {
     pub item_id_counter: u32,
     pub categories: HashSet<String>,
 }
+
+
+impl DatastoreQueries for Datastore {
+    fn top_user_ids(&self, n: u16) -> Vec<u32> {
+        return self.top_user_scores.extract_top(n as usize);
+    }
+
+    fn users_searchhit_ids(&self, searchterm: &str) -> Vec<u32> {
+        return self.users_suffix_tree.search(searchterm).iter().map(|sr : &SearchResult|sr.id).collect();
+    }
+
+    fn items_searchhit_ids(&self, searchterm: &str) -> Vec<u32> {
+        return self.items_suffix_tree.search(searchterm).iter().map(|sr : &SearchResult|sr.id).collect();
+    }
+
+    fn personal_log_filtered(&self, user_id: u32, millis_start_inclusive: i64, millis_end_exclusive: i64) -> Vec<Purchase> {
+        let v : Vec<Purchase> = self.purchases.iter()
+            .filter(|p: &&Purchase| {
+            true
+        })
+            .map(|p: &Purchase| p.clone())
+            .collect();
+
+        return v;
+    }
+
+    fn global_log_filtered(&self, millis_start_inclusive: i64, millis_end_exclusive: i64) -> &[Purchase] {
+        let (from, to) = find_purchase_indices(&self.purchases, millis_start_inclusive, millis_end_exclusive);
+        return &self.purchases[from..to];
+    }
+
+    fn all_categories(&self) -> Vec<String> {
+        let mut v : Vec<String> = Vec::new();
+        for x in &self.categories {
+            v.push(x.to_string());
+        }
+        return v;
+    }
+    fn top_item_ids(&self, user_id: u32, n: u8) -> Vec<u32> {
+        match self.drink_scores_per_user.get(&user_id) {
+            Some(ref tree) => return tree.extract_top(n as usize),
+            None => return vec![],
+        };
+    }
+}
+
+//returns lowest and highest vector index to get all purchases in given timespan
+pub fn find_purchase_indices(purchases : &[Purchase], millis_start_inclusive: i64, millis_end_exclusive: i64) -> (usize, usize) {
+    let a = purchases.binary_search_by(|probe|probe.get_timestamp().cmp(&millis_start_inclusive));
+
+    let first = match a {
+        Ok(b) => b,
+        Err(b) => b,
+    };
+
+    let o = purchases.binary_search_by(|probe|{
+        let c = millis_start_inclusive + 1;
+        probe.get_timestamp().cmp(&c)
+    });
+
+    let last = match o {
+        Ok(b) => b,
+        Err(b) => b,
+    };
+
+    return (first,last);
+}
+
 
 pub trait Itemable {
     fn has_item(&self, id: u32) -> bool;
@@ -103,11 +189,13 @@ impl SearchableElement for User {
 impl Default for Datastore {
     fn default() -> Self {
         let empty_user_vec: Vec<User> = Vec::new();
+        let empty_item_vec: Vec<User> = Vec::new();
 
         return Datastore {
             users: HashMap::new(),
             users_suffix_tree: MockKDTree::build(&empty_user_vec, true),
             items: HashMap::new(),
+            items_suffix_tree: MockKDTree::build(&empty_item_vec, true),
             purchases: Vec::new(),
             purchase_count: 0,
             bills: Vec::new(),
@@ -488,7 +576,7 @@ pub trait FreebyAble {
 
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Purchase {
     /* SpecialPurchase {
         timestamp_seconds: u32,

@@ -134,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "rustix-bl"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "custom_derive 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
