@@ -132,7 +132,7 @@ mod tests {
     use suffix_rs::KDTree;
     use datastore::Purchaseable;
     use datastore::PurchaseFunctions;
-
+    use datastore::DatastoreQueries;
     use rustix_backend::WriteBackend;
 
     fn build_test_backend() -> RustixBackend<persistencer::TransientPersister> {
@@ -331,6 +331,53 @@ mod tests {
         assert_eq!(backend.datastore.get_purchase(0).is_none(), true);
 
         assert_eq!(backend.datastore.get_purchase(4).is_none(), true);
+
+
+        //test all user query
+        let two_user = backend.datastore.users_searchhit_ids("");
+        let one_user = backend.datastore.users_searchhit_ids("klau");
+        let zero_user = backend.datastore.users_searchhit_ids("lisa");
+
+        assert_eq!(two_user.len(), 2);
+        assert_eq!(one_user.len(), 1);
+        assert_eq!(zero_user.len(), 0);
+
+        //test all item query
+        let all_item = backend.datastore.items_searchhit_ids("");
+        let one_item = backend.datastore.items_searchhit_ids("beer");
+        let zero_item = backend.datastore.items_searchhit_ids("cola");
+
+        assert_eq!(one_item.len(), 1);
+        assert_eq!(all_item.len(), 1);
+        assert_eq!(zero_item.len(), 0);
+
+        //test top user query
+        let top_two_user = backend.datastore.top_user_ids(2);
+        let top_three_user = backend.datastore.top_user_ids(3);
+        let top_one_user = backend.datastore.top_user_ids(1);
+        let top_zero_user = backend.datastore.top_user_ids(0);
+
+        assert_eq!(top_two_user.len(), 2);
+        assert_eq!(top_three_user.len(), 2);
+        assert_eq!(top_one_user.len(), 1);
+        assert_eq!(top_zero_user.len(), 0);
+
+
+        //test top item query
+
+        let top_items = backend.datastore.top_item_ids(0, 2);
+        let no_top_items = backend.datastore.top_item_ids(0, 0);
+
+        assert_eq!(top_items.len(), 1);
+        assert_eq!(no_top_items.len(), 0);
+
+        //test purchase query personal
+        //TODO: implement test case
+
+        //test purchase query global
+        //TODO: implement test case
+
+
 
 
     }
