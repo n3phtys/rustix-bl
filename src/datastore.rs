@@ -88,7 +88,7 @@ impl DatastoreQueries for Datastore {
     fn personal_log_filtered(&self, user_id: u32, millis_start_inclusive: i64, millis_end_exclusive: i64) -> Vec<Purchase> {
         let v : Vec<Purchase> = self.purchases.iter()
             .filter(|p: &&Purchase| {
-            true
+            p.get_user_id().eq(&user_id) && p.get_timestamp() >= &millis_start_inclusive && p.get_timestamp() < &millis_end_exclusive
         })
             .map(|p: &Purchase| p.clone())
             .collect();
@@ -98,6 +98,9 @@ impl DatastoreQueries for Datastore {
 
     fn global_log_filtered(&self, millis_start_inclusive: i64, millis_end_exclusive: i64) -> &[Purchase] {
         let (from, to) = find_purchase_indices(&self.purchases, millis_start_inclusive, millis_end_exclusive);
+
+        println!("global_log_filtered from {} to {} found begin index {} and end index {}", millis_start_inclusive, millis_end_exclusive, from, to);
+
         return &self.purchases[from..to];
     }
 
@@ -131,8 +134,8 @@ pub fn find_purchase_indices(purchases : &[Purchase], millis_start_inclusive: i6
     });
 
     let last = match o {
-        Ok(b) => b,
-        Err(b) => b,
+        Ok(g) => g,
+        Err(g) => g,
     };
 
     return (first,last);

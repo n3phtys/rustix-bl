@@ -276,7 +276,7 @@ mod tests {
 
         //make second purchase by B
 
-        assert_eq!(backend.purchase(1, 0, 12345878i64), false);
+        assert_eq!(backend.purchase(1, 0, 12345888i64), false);
         assert_eq!(backend.datastore.purchases.len(), 2);
         assert_eq!(backend.datastore.top_users.len(), 1);
         assert_eq!(backend.datastore.top_users.get(&0).unwrap(), &0u32);
@@ -371,14 +371,31 @@ mod tests {
         assert_eq!(top_items.len(), 1);
         assert_eq!(no_top_items.len(), 0);
 
-        //test purchase query personal
-        //TODO: implement test case
+        //test purchase query personal (by user with id = 1)
+        let lowest_time_point = 1000i64;
+        let low_mid_time_point =    12345680i64;
+        let mid_time_point =        12345880i64;
+        let high_mid_time_poin =         12345890i64;
+        let highest_time_point =    12447878i64;
+
+        let all_personal_purchases = backend.datastore.personal_log_filtered(1, lowest_time_point, highest_time_point);
+        let one_personal_purchases = backend.datastore.personal_log_filtered(1, low_mid_time_point, high_mid_time_poin);
+        let zero_personal_purchases = backend.datastore.personal_log_filtered(1, low_mid_time_point, mid_time_point);
+
+        assert_eq!(all_personal_purchases.len(), 2);
+        assert_eq!(one_personal_purchases.len(), 1);
+        assert_eq!(zero_personal_purchases.len(), 0);
+
 
         //test purchase query global
-        //TODO: implement test case
+        let all_global_purchases = backend.datastore.global_log_filtered(lowest_time_point, highest_time_point);
+        let one_global_purchases = backend.datastore.global_log_filtered(low_mid_time_point, high_mid_time_poin);
+        let zero_global_purchases = backend.datastore.global_log_filtered(low_mid_time_point, mid_time_point);
 
 
-
+        assert_eq!(all_global_purchases.len(), 3);
+        assert_eq!(one_global_purchases.len(), 1);
+        assert_eq!(zero_global_purchases.len(), 0);
 
     }
 
