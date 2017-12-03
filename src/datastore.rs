@@ -99,6 +99,7 @@ impl DatastoreQueries for Datastore {
     fn global_log_filtered(&self, millis_start_inclusive: i64, millis_end_exclusive: i64) -> &[Purchase] {
         let (from, to) = find_purchase_indices(&self.purchases, millis_start_inclusive, millis_end_exclusive);
 
+        println!("binary search in {:?}", self.purchases);
         println!("global_log_filtered from {} to {} found begin index {} and end index {}", millis_start_inclusive, millis_end_exclusive, from, to);
 
         return &self.purchases[from..to];
@@ -129,7 +130,7 @@ pub fn find_purchase_indices(purchases : &[Purchase], millis_start_inclusive: i6
     };
 
     let o = purchases.binary_search_by(|probe|{
-        let c = millis_start_inclusive + 1;
+        let c = millis_end_exclusive + 1;
         probe.get_timestamp().cmp(&c)
     });
 

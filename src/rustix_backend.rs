@@ -375,7 +375,7 @@ mod tests {
         let lowest_time_point = 1000i64;
         let low_mid_time_point =    12345680i64;
         let mid_time_point =        12345880i64;
-        let high_mid_time_poin =         12345890i64;
+        let high_mid_time_poin =    12345890i64;
         let highest_time_point =    12447878i64;
 
         let all_personal_purchases = backend.datastore.personal_log_filtered(1, lowest_time_point, highest_time_point);
