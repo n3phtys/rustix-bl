@@ -78,7 +78,13 @@ impl DatastoreQueries for Datastore {
     }
 
     fn users_searchhit_ids(&self, searchterm: &str) -> Vec<u32> {
-        return self.users_suffix_tree.search(searchterm).iter().map(|sr : &SearchResult|sr.id).collect();
+        let mut v : Vec<u32> = vec![];
+        let xs =  self.users_suffix_tree.search(searchterm);
+        for x in xs {
+            v.push(x.id);
+        }
+        println!("Found user searchhits: {:?}", v);
+        return v;
     }
 
     fn items_searchhit_ids(&self, searchterm: &str) -> Vec<u32> {
