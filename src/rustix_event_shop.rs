@@ -46,7 +46,7 @@ pub enum BLEvents {
     },
     UndoPurchase { unique_id: u64 },
     CreateBill {
-        timestamp: u32,
+        timestamp: i64,
         user_ids: UserGroup,
         comment: String,
     },
@@ -178,63 +178,73 @@ impl Event for BLEvents {
                 let user_ids_copy: datastore::UserGroup = user_ids.clone();
                 let user_ids_other_copy: datastore::UserGroup = user_ids.clone();
 
-                let mut counts: HashMap<u32, HashMap<u32, u32>> = HashMap::new();
-                let mut costs: HashMap<u32, HashMap<u32, u32>> = HashMap::new();
+                let mut counts: HashMap<(u32, String), HashMap<(u32, String), u32>> = HashMap::new();
+                let mut costs: HashMap<(u32, String), HashMap<(u32, String), u32>> = HashMap::new();
 
                 match user_ids_copy {
-                    datastore::UserGroup::AllUsers => for user_id in store.users.keys() {
+                    datastore::UserGroup::AllUsers => for (user_id , user) in &store.users {
                         counts.insert(
-                            *user_id,
+                            (*user_id, user.username.to_string()),
                             store
                                 .balance_count_per_user
-                                .remove(user_id)
+                                .remove(&(*user_id, user.username.to_string()))
                                 .unwrap_or(HashMap::new()),
                         );
                         costs.insert(
-                            *user_id,
+                            (*user_id, user.username.to_string()),
                             store
                                 .balance_cost_per_user
-                                .remove(user_id)
+                                .remove(&(*user_id, user.username.to_string()))
                                 .unwrap_or(HashMap::new()),
                         );
                     },
                     datastore::UserGroup::SingleUser { user_id } => {
+                        let key : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key1 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key2 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key3 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
                         counts.insert(
-                            user_id,
+                            key,
                             store
                                 .balance_count_per_user
-                                .remove(&user_id)
+                                .remove(&(key2))
                                 .unwrap_or(HashMap::new()),
                         );
                         costs.insert(
-                            user_id,
+                            key1,
                             store
                                 .balance_cost_per_user
-                                .remove(&user_id)
+                                .remove(&key3)
                                 .unwrap_or(HashMap::new()),
                         );
                     }
                     datastore::UserGroup::MultipleUsers { ref user_ids } => for user_id in user_ids
                     {
+                        let name : String = store.users.get(user_id).unwrap().username.to_string();
+                        let key : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key1 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key2 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key3 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        //let key : (u32, String) = (*user_id, name );
                         counts.insert(
-                            *user_id,
+                            key,
                             store
                                 .balance_count_per_user
-                                .remove(&user_id)
+                                .remove(&key1)
                                 .unwrap_or(HashMap::new()),
                         );
                         costs.insert(
-                            *user_id,
+                            key2,
                             store
                                 .balance_cost_per_user
-                                .remove(&user_id)
+                                .remove(&key3)
                                 .unwrap_or(HashMap::new()),
                         );
                     },
                 };
 
                 store.bills.push(datastore::Bill {
-                    timestamp_seconds: timestamp,
+                    timestamp: timestamp,
                     users: user_ids_other_copy,
                     count_hash_map: counts,
                     sum_of_cost_hash_map: costs,
@@ -315,6 +325,8 @@ impl Event for BLEvents {
                     false
                 }
             }
+            //should return true if it was the most recent purchase
+
             &BLEvents::MakeSimplePurchase {
                 user_id,
                 item_id,
@@ -369,39 +381,45 @@ impl Event for BLEvents {
 
                 //increase cost map value
                 let alt_hashmap_1 = HashMap::new();
+                let username = store.users.get(&user_id).unwrap().username.to_string();
+                let itemname = store.items.get(&item_id).unwrap().name.to_string();
+                let user_key = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                let item_key = (item_id, store.items.get(&item_id).unwrap().name.to_string());
                 let mut old_cost_map = store
                     .balance_cost_per_user
-                    .remove(&user_id)
+                    .remove(&user_key)
                     .unwrap_or(alt_hashmap_1);
-                let old_cost_value = *old_cost_map.get(&item_id).unwrap_or(&0);
+                let old_cost_value = *old_cost_map.get(&item_key).unwrap_or(&0);
                 old_cost_map.insert(
-                    item_id,
+                    item_key,
                     old_cost_value
                         + store
-                            .items
-                            .get(&item_id)
-                            .map(|item| item.cost_cents)
-                            .unwrap_or(0),
+                        .items
+                        .get(&item_id)
+                        .map(|item| item.cost_cents)
+                        .unwrap_or(0),
                 );
-                store.balance_cost_per_user.insert(user_id, old_cost_map);
+                store.balance_cost_per_user.insert(user_key, old_cost_map);
 
                 //increase count map value
                 let alt_hashmap_2 = HashMap::new();
+                let user_key2 : (u32, String) = (user_id, username.to_string());
+                let user_key3 : (u32, String) = (user_id, username.to_string());
+                let item_key2 : (u32, String) = (item_id, itemname.to_string());
+                let item_key3 : (u32, String) = (item_id, itemname.to_string());
                 let mut old_count_map = store
                     .balance_count_per_user
-                    .remove(&user_id)
+                    .remove(&user_key2)
                     .unwrap_or(alt_hashmap_2);
-                let old_count_value = *old_count_map.get(&item_id).unwrap_or(&0);
-                old_count_map.insert(item_id, old_count_value + 1);
-                store.balance_count_per_user.insert(user_id, old_count_map);
+                let old_count_value = *old_count_map.get(&item_key2).unwrap_or(&0);
+                old_count_map.insert(item_key3, old_count_value + 1);
+                store.balance_count_per_user.insert(user_key3, old_count_map);
 
 
                 let is_in_now = store.top_users.contains(&user_id);
 
                 ((!was_in_before) & (is_in_now))
             }
-
-            //should return true if it was the most recent purchase
             &BLEvents::UndoPurchase { unique_id } => {
                 //remove purchase from list
                 let index = store
@@ -412,31 +430,35 @@ impl Event for BLEvents {
                 let old_size = store.purchases.len();
                 let element = store.purchases.remove(index);
 
+                let item_key1 : (u32, String) = (*element.get_item_id(), store.items.get(&element.get_item_id()).unwrap().name.to_string());
+                let item_key2 : (u32, String) = (*element.get_item_id(), store.items.get(&element.get_item_id()).unwrap().name.to_string());
+                let user_key : (u32, String) = (*element.get_user_id(), store.users.get(&element.get_user_id()).unwrap().username.to_string());
+
                 //remove cost and count lists:
                 let oldcost = *store
                     .balance_cost_per_user
-                    .get(element.get_user_id())
+                    .get(&user_key)
                     .unwrap()
-                    .get(element.get_item_id())
+                    .get(&item_key1)
                     .unwrap();
                 let oldcount = *store
                     .balance_count_per_user
-                    .get(element.get_user_id())
+                    .get(&user_key)
                     .unwrap()
-                    .get(element.get_item_id())
+                    .get(&item_key1)
                     .unwrap();
 
 
                 store
                     .balance_cost_per_user
-                    .get_mut(element.get_user_id())
+                    .get_mut(&user_key)
                     .unwrap()
-                    .insert(*element.get_item_id(), oldcost - 1);
+                    .insert(item_key1, oldcost - 1);
                 store
                     .balance_count_per_user
-                    .get_mut(element.get_user_id())
+                    .get_mut(&user_key)
                     .unwrap()
-                    .insert(*element.get_item_id(), oldcount - 1);
+                    .insert(item_key2, oldcount - 1);
 
 
                 old_size == index + 1

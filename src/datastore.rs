@@ -42,8 +42,8 @@ pub struct Datastore {
     pub top_users: HashSet<u32>,
     pub top_drinks_per_user: HashMap<u32, HashSet<u32>>,
     pub drink_scores_per_user: HashMap<u32, ScoredIdTreeMock>,
-    pub balance_cost_per_user: HashMap<u32, HashMap<u32, u32>>,
-    pub balance_count_per_user: HashMap<u32, HashMap<u32, u32>>,
+    pub balance_cost_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
+    pub balance_count_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
 
     // keeps hashmap of user_id => user
     // keeps hashmap of user_id => user
@@ -301,10 +301,10 @@ pub struct Item {
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Bill {
-    pub timestamp_seconds: u32,
+    pub timestamp: i64,
     pub users: UserGroup,
-    pub count_hash_map: HashMap<u32, HashMap<u32, u32>>,
-    pub sum_of_cost_hash_map: HashMap<u32, HashMap<u32, u32>>,
+    pub count_hash_map: HashMap<(u32, String), HashMap<(u32, String), u32>>,
+    pub sum_of_cost_hash_map: HashMap<(u32, String), HashMap<(u32, String), u32>>,
     pub comment: String,
 }
 

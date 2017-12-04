@@ -24,7 +24,7 @@ pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersi
 */
 
 pub trait WriteBackend {
-    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> bool;
+    fn create_bill(&mut self, timestamp: i64, user_ids: UserGroup, comment: String) -> bool;
     fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>)
         -> bool;
     fn create_user(&mut self, username: String) -> bool;
@@ -44,7 +44,7 @@ impl<T> WriteBackend for RustixBackend<T>
 where
     T: persistencer::Persistencer + persistencer::LMDBPersistencer,
 {
-    fn create_bill(&mut self, timestamp: u32, user_ids: UserGroup, comment: String) -> bool {
+    fn create_bill(&mut self, timestamp: i64, user_ids: UserGroup, comment: String) -> bool {
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateBill {
                 timestamp: timestamp,
@@ -425,13 +425,23 @@ mod tests {
         backend.purchase(0, 1, 20);
         backend.purchase(0, 0, 30);
 
+        let user_key = (0, (&backend).datastore.users.get(&0).unwrap().username.to_string());
+        let user_1_key = (1, (&backend).datastore.users.get(&1).unwrap().username.to_string());
+        let item_0_key = (0, (&backend).datastore.items.get(&0).unwrap().name.to_string());
+        let item_1_key = (1, (&backend).datastore.items.get(&1).unwrap().name.to_string());
+        println!("Testoutput = {:?}\nwith user key = {:?}\nand item key = {:?}", backend.datastore, &user_key, &item_0_key);
+        assert!(backend
+            .datastore
+            .balance_cost_per_user
+            .get(&user_key)
+            .is_some());
         assert_eq!(
             backend
                 .datastore
                 .balance_cost_per_user
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&0)
+                .get(&item_0_key)
                 .unwrap(),
             &90u32
         );
@@ -440,16 +450,16 @@ mod tests {
             backend
                 .datastore
                 .balance_cost_per_user
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&1)
+                .get(&item_1_key)
                 .unwrap(),
             &55u32
         );
 
 
         assert_eq!(
-            backend.datastore.balance_cost_per_user.get(&1).is_none(),
+            backend.datastore.balance_cost_per_user.get(&user_1_key).is_none(),
             true
         );
 
@@ -460,13 +470,13 @@ mod tests {
         //control that current balance is down to zero for all users
 
         assert_eq!(
-            backend.datastore.balance_cost_per_user.get(&0).is_none(),
+            backend.datastore.balance_cost_per_user.get(&user_key).is_none(),
             true
         );
 
 
         assert_eq!(
-            backend.datastore.balance_cost_per_user.get(&1).is_none(),
+            backend.datastore.balance_cost_per_user.get(&user_1_key).is_none(),
             true
         );
 
@@ -479,9 +489,9 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .sum_of_cost_hash_map
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&0)
+                .get(&item_0_key)
                 .unwrap(),
             &90u32
         );
@@ -492,7 +502,7 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .sum_of_cost_hash_map
-                .get(&1)
+                .get(&user_1_key)
                 .unwrap()
                 .is_empty(),
             true
@@ -504,9 +514,9 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .count_hash_map
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&1)
+                .get(&item_1_key)
                 .unwrap(),
             &1u32
         );
@@ -517,15 +527,15 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .count_hash_map
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&1)
+                .get(&item_1_key)
                 .unwrap(),
             &1u32
         );
         assert_eq!(
-            backend.datastore.bills.get(0).unwrap().timestamp_seconds,
-            100u32
+            backend.datastore.bills.get(0).unwrap().timestamp,
+            100i64
         );
         assert_eq!(backend.datastore.bills.get(0).unwrap().users, AllUsers);
         assert_eq!(
@@ -546,9 +556,9 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .sum_of_cost_hash_map
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&0)
+                .get(&item_0_key)
                 .unwrap(),
             &90u32
         );
@@ -559,7 +569,7 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .sum_of_cost_hash_map
-                .get(&1)
+                .get(&user_1_key)
                 .unwrap()
                 .is_empty(),
             true
@@ -571,9 +581,9 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .count_hash_map
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&1)
+                .get(&item_1_key)
                 .unwrap(),
             &1u32
         );
@@ -584,15 +594,15 @@ mod tests {
                 .get(0)
                 .unwrap()
                 .count_hash_map
-                .get(&0)
+                .get(&user_key)
                 .unwrap()
-                .get(&1)
+                .get(&item_1_key)
                 .unwrap(),
             &1u32
         );
         assert_eq!(
-            backend.datastore.bills.get(0).unwrap().timestamp_seconds,
-            100u32
+            backend.datastore.bills.get(0).unwrap().timestamp,
+            100i64
         );
         assert_eq!(backend.datastore.bills.get(0).unwrap().users, AllUsers);
         assert_eq!(
