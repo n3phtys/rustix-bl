@@ -83,7 +83,6 @@ impl DatastoreQueries for Datastore {
         for x in xs {
             v.push(x.id);
         }
-        println!("Found user searchhits: {:?}", v);
         return v;
     }
 
@@ -105,8 +104,6 @@ impl DatastoreQueries for Datastore {
     fn global_log_filtered(&self, millis_start_inclusive: i64, millis_end_exclusive: i64) -> &[Purchase] {
         let (from, to) = find_purchase_indices(&self.purchases, millis_start_inclusive, millis_end_exclusive);
 
-        println!("binary search in {:?}", self.purchases);
-        println!("global_log_filtered from {} to {} found begin index {} and end index {}", millis_start_inclusive, millis_end_exclusive, from, to);
 
         return &self.purchases[from..to];
     }

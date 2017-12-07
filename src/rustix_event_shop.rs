@@ -54,7 +54,6 @@ pub enum BLEvents {
 
 fn hashset(data: &[u32]) -> HashSet<u32> {
     let r = HashSet::from_iter(data.iter().cloned());
-    println!("Hashset generated from Vec={:?} to Hashset={:?}", data, r);
     return r;
 }
 
@@ -122,7 +121,6 @@ impl Event for BLEvents {
                     store.items_suffix_tree = MockKDTree::build(&items_vec, false);
                 }
 
-                println!("Datastore after Item creation =\n{:?}", store);
 
                 true
             }
@@ -166,7 +164,6 @@ impl Event for BLEvents {
                     store.users_suffix_tree = MockKDTree::build(&users_vec, false);
                 }
 
-                println!("Datastore after User creation =\n{:?}", store);
 
                 true
             }
@@ -356,7 +353,6 @@ impl Event for BLEvents {
                                     .extract_top(config.top_drinks_per_user)
                                     .as_slice(),
                             );
-                            println!("New Topitems: {:?}", topitems);
                         }
                     }
                 }
@@ -374,10 +370,8 @@ impl Event for BLEvents {
                             .as_slice(),
                     );
                 } else {
-                    println!("already in top users for userid = {}", user_id);
+
                 }
-                println!("New User Scores: {:?}", store.top_user_scores);
-                println!("New Top Users: {:?}", store.top_users);
 
                 //increase cost map value
                 let alt_hashmap_1 = HashMap::new();
@@ -517,9 +511,7 @@ mod tests {
 
         // Serialize it to a JSON string.
         let json = serde_json::to_string(&v).unwrap();
-        println!("{}", json);
         let reparsed_content: Vec<BLEvents> = serde_json::from_str(&json).unwrap();
-        println!("{:#?}", reparsed_content);
         assert_eq!(reparsed_content, v);
     }
 
@@ -549,10 +541,8 @@ mod tests {
 
         // Serialize it to a JSON string.
         let json_bytes = serde_json::to_string(&v).unwrap().as_bytes().to_vec();
-        println!("{:?}", json_bytes);
         let reparsed_content: Vec<BLEvents> =
             serde_json::from_str(std::str::from_utf8(json_bytes.as_ref()).unwrap()).unwrap();
-        println!("{:#?}", reparsed_content);
         assert_eq!(reparsed_content, v);
     }
 }
