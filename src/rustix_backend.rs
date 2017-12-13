@@ -141,23 +141,69 @@ where
         );
     }
     fn special_purchase(&mut self, user_id: u32, special_name: String, millis_timestamp: i64) -> bool {
-        unimplemented!()
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::MakeSpecialPurchase {
+                user_id: user_id,
+                special_name: special_name,
+                timestamp: millis_timestamp,
+            },
+            &mut self.datastore,
+        );
     }
 
     fn ffa_purchase(&mut self, ffa_id: u64, item_id: u32, millis_timestamp: i64) -> bool {
-        unimplemented!()
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::MakeFreeForAllPurchase {
+            ffa_id: ffa_id,
+                item_id: item_id,
+            timestamp: millis_timestamp,
+            },
+            &mut self.datastore,
+        );
     }
 
     fn create_ffa(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u64) -> bool {
-        unimplemented!()
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::CreateFreeForAll {
+                allowed_categories: allowed_categories,
+                allowed_drinks: allowed_drinks,
+                allowed_number_total: allowed_number_total,
+                text_message: text_message,
+                created_timestamp: created_timestamp,
+                donor: donor,
+            },
+            &mut self.datastore,
+        );
     }
 
     fn create_free_budget(&mut self, cents_worth_total: u64, text_message: String, created_timestamp: i64, donor: u64, recipient: u64) -> bool {
-        unimplemented!()
+
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::CreateFreeBudget {
+                cents_worth_total: cents_worth_total,
+                text_message: text_message,
+                created_timestamp: created_timestamp,
+                donor: donor,
+                recipient: recipient,
+            },
+            &mut self.datastore,
+        );
     }
 
     fn create_free_count(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u64, recipient: u64) -> bool {
-        unimplemented!()
+
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::CreateFreeCount {
+                allowed_categories: allowed_categories,
+                allowed_drinks: allowed_drinks,
+                allowed_number_total: allowed_number_total,
+                text_message: text_message,
+                created_timestamp: created_timestamp,
+                donor: donor,
+                recipient: recipient,
+            },
+            &mut self.datastore,
+        );
     }
 }
 
@@ -176,7 +222,7 @@ mod tests {
     use std::collections::HashSet;
     use datastore::UserGroup::AllUsers;
     use suffix_rs::KDTree;
-    use datastore::Purchaseable;
+    use datastore::*;
     use datastore::PurchaseFunctions;
     use datastore::DatastoreQueries;
     use rustix_backend::WriteBackend;
@@ -656,4 +702,34 @@ mod tests {
             "remark of bill".to_string()
         );
     }
+
+
+
+    #[test]
+    fn simple_add_special_purchase() {
+        let mut backend = build_test_backend();
+        let ts1 = 1i64;
+        let ts2 = 2i64;
+        let ts3 = 3i64;
+        let special_name = "Mein eigener Text mit \n Zeilenumbruch";
+
+        backend.create_user("klaus".to_string());
+        backend.create_item("item 1".to_string(), 45, None);
+        backend.purchase(0, 0, ts1);
+        backend.special_purchase(0, special_name.to_string(), ts2);
+        backend.purchase(0,0, ts3);
+        assert_eq!(backend.datastore.purchases.len(), 2);
+        assert_eq!(backend.datastore.purchase_count, 3);
+        assert_eq!(backend.datastore.balance_special.get(&(0u32, "klaus".to_string())).unwrap()[0].0, special_name.to_string());
+        assert_eq!(backend.datastore.balance_special.get(&(0u32, "klaus".to_string())).unwrap()[0].1, ts2);
+
+        backend.create_bill(100, AllUsers, "remark of bill".to_string());
+
+        let bill : &Bill = &backend.datastore.bills[0];
+
+        assert_eq!(bill.special_map.len(), 1);
+        assert_eq!(backend.datastore.balance_special.len(), 0);
+    }
+
+
 }

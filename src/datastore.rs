@@ -44,6 +44,7 @@ pub struct Datastore {
     pub drink_scores_per_user: HashMap<u32, ScoredIdTreeMock>,
     pub balance_cost_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
     pub balance_count_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
+    pub balance_special: HashMap<(u32, String), Vec<(String, i64)>>,
 
     // keeps hashmap of user_id => user
     // keeps hashmap of user_id => user
@@ -239,6 +240,7 @@ impl Default for Datastore {
             drink_scores_per_user: HashMap::new(),
             balance_cost_per_user: HashMap::new(),
             balance_count_per_user: HashMap::new(),
+            balance_special: HashMap::new(),
             user_id_counter: 0,
             item_id_counter: 0,
             categories: HashSet::new(),
@@ -301,6 +303,7 @@ pub struct Bill {
     pub timestamp: i64,
     pub users: UserGroup,
     pub count_hash_map: HashMap<(u32, String), HashMap<(u32, String), u32>>,
+    pub special_map: HashMap<(u32, String), Vec<(String, i64)>>,
     pub sum_of_cost_hash_map: HashMap<(u32, String), HashMap<(u32, String), u32>>,
     pub comment: String,
 }
@@ -312,6 +315,7 @@ pub trait PurchaseFunctions {
     fn get_user_id(&self) -> &u32;
     fn get_item_id(&self) -> &u32;
     fn get_timestamp(&self) -> &i64;
+    fn get_special_name(&self) -> String;
 }
 
 
@@ -707,5 +711,8 @@ impl PurchaseFunctions for Purchase {
                 return timestamp_epoch_millis;
             }
         }
+    }
+    fn get_special_name(&self) -> String {
+        unimplemented!()
     }
 }

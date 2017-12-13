@@ -217,6 +217,8 @@ impl Event for BLEvents {
                 let mut counts: HashMap<(u32, String), HashMap<(u32, String), u32>> = HashMap::new();
                 let mut costs: HashMap<(u32, String), HashMap<(u32, String), u32>> = HashMap::new();
 
+                let mut specials: HashMap<(u32, String), Vec<(String, i64)>> = HashMap::new();
+
                 match user_ids_copy {
                     datastore::UserGroup::AllUsers => for (user_id , user) in &store.users {
                         counts.insert(
@@ -233,12 +235,21 @@ impl Event for BLEvents {
                                 .remove(&(*user_id, user.username.to_string()))
                                 .unwrap_or(HashMap::new()),
                         );
+                        specials.insert(
+                            (*user_id, user.username.to_string()),
+                            store
+                                .balance_special
+                                .remove(&(*user_id, user.username.to_string()))
+                                .unwrap_or(Vec::new()),
+                        );
                     },
                     datastore::UserGroup::SingleUser { user_id } => {
                         let key : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
                         let key1 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
                         let key2 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
                         let key3 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key4 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key5 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
                         counts.insert(
                             key,
                             store
@@ -253,6 +264,13 @@ impl Event for BLEvents {
                                 .remove(&key3)
                                 .unwrap_or(HashMap::new()),
                         );
+                        specials.insert(
+                            key4,
+                            store
+                                .balance_special
+                                .remove(&key5)
+                                .unwrap_or(Vec::new()),
+                        );
                     }
                     datastore::UserGroup::MultipleUsers { ref user_ids } => for user_id in user_ids
                     {
@@ -261,6 +279,8 @@ impl Event for BLEvents {
                         let key1 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
                         let key2 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
                         let key3 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key4 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
+                        let key5 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
                         //let key : (u32, String) = (*user_id, name );
                         counts.insert(
                             key,
@@ -276,6 +296,13 @@ impl Event for BLEvents {
                                 .remove(&key3)
                                 .unwrap_or(HashMap::new()),
                         );
+                        specials.insert(
+                            key4,
+                            store
+                                .balance_special
+                                .remove(&key5)
+                                .unwrap_or(Vec::new()),
+                        );
                     },
                 };
 
@@ -283,6 +310,7 @@ impl Event for BLEvents {
                     timestamp: timestamp,
                     users: user_ids_other_copy,
                     count_hash_map: counts,
+                    special_map: specials,
                     sum_of_cost_hash_map: costs,
                     comment: comment.to_string(),
                 });
