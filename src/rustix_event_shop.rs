@@ -112,7 +112,7 @@ impl Event for BLEvents {
                 item_id,
                 timestamp,
             } => store.has_item(item_id) && store.has_user(user_id),
-            &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => unimplemented!(),
+            &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => store.has_user(*user_id),
             &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
             &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
@@ -481,7 +481,20 @@ impl Event for BLEvents {
 
                 ((!was_in_before) & (is_in_now))
             }
-            &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => unimplemented!(),
+            &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => {
+                let idx: u64 = store.purchase_count + 1;
+                store.purchase_count = idx;
+
+                let key1 : (u32, String) = (*user_id, store.users.get(user_id).map(|x|x.username.to_string()).unwrap_or("".to_string()));
+                let key2 : (u32, String) = (*user_id, store.users.get(user_id).map(|x|x.username.to_string()).unwrap_or("".to_string()));
+                let mut old_value = store.balance_special.remove(&key1).unwrap_or(Vec::new());
+
+                old_value.push((special_name.to_string(), *timestamp));
+
+                store.balance_special.insert(key2, old_value);
+
+                true
+            },
             &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
             &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
