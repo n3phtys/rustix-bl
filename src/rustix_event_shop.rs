@@ -44,6 +44,40 @@ pub enum BLEvents {
         item_id: u32,
         timestamp: i64,
     },
+    MakeSpecialPurchase {
+        user_id: u32,
+        special_name: String,
+        timestamp: i64,
+    },
+    MakeFreeForAllPurchase {
+        ffa_id: u64,
+        item_id: u32,
+        timestamp: i64,
+    },
+    CreateFreeForAll {
+        allowed_categories : Vec<String>,
+        allowed_drinks : Vec<u32>,
+        allowed_number_total : u16,
+        text_message : String,
+        created_timestamp : i64,
+        donor : u64,
+    },
+    CreateFreeCount {
+        allowed_categories : Vec<String>,
+        allowed_drinks : Vec<u32>,
+        allowed_number_total : u16,
+        text_message : String,
+        created_timestamp : i64,
+        donor : u64,
+        recipient : u64,
+    },
+    CreateFreeBudget {
+        cents_worth_total : u64,
+        text_message : String,
+        created_timestamp : i64,
+        donor : u64,
+        recipient : u64,
+    },
     UndoPurchase { unique_id: u64 },
     CreateBill {
         timestamp: i64,
@@ -78,6 +112,11 @@ impl Event for BLEvents {
                 item_id,
                 timestamp,
             } => store.has_item(item_id) && store.has_user(user_id),
+            &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => unimplemented!(),
+            &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
+            &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
+            &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
+            &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => store.purchase_count >= unique_id,
         };
     }
@@ -414,6 +453,11 @@ impl Event for BLEvents {
 
                 ((!was_in_before) & (is_in_now))
             }
+            &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => unimplemented!(),
+            &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
+            &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
+            &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
+            &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => {
                 //remove purchase from list
                 let index = store

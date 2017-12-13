@@ -34,6 +34,31 @@ pub trait WriteBackend {
 
     fn purchase(&mut self, user_id: u32, item_id: u32, millis_timestamp: i64) -> bool;
 
+    fn special_purchase(&mut self, user_id: u32, special_name: String, millis_timestamp: i64) -> bool;
+
+    fn ffa_purchase(&mut self, ffa_id: u64, item_id: u32, millis_timestamp: i64) -> bool;
+
+    fn create_ffa(&mut self, allowed_categories : Vec<String>,
+                         allowed_drinks : Vec<u32>,
+                         allowed_number_total : u16,
+                         text_message : String,
+                         created_timestamp : i64,
+                         donor : u64) -> bool;
+
+    fn create_free_budget(&mut self, cents_worth_total : u64,
+                          text_message : String,
+                          created_timestamp : i64,
+                          donor : u64,
+                          recipient : u64) -> bool;
+
+    fn create_free_count(&mut self, allowed_categories : Vec<String>,
+                         allowed_drinks : Vec<u32>,
+                         allowed_number_total : u16,
+                         text_message : String,
+                         created_timestamp : i64,
+                         donor : u64,
+                         recipient : u64) -> bool;
+
     fn undo_purchase(&mut self, unique_id: u64) -> bool;
 
     fn reload(&mut self) -> Result<u32, persistencer::RustixError>;
@@ -102,6 +127,8 @@ where
             &mut self.datastore,
         );
     }
+
+
     fn reload(&mut self) -> Result<u32, persistencer::RustixError> {
         return self.persistencer.reload_from_filepath(&mut self.datastore);
     }
@@ -112,6 +139,25 @@ where
             },
             &mut self.datastore,
         );
+    }
+    fn special_purchase(&mut self, user_id: u32, special_name: String, millis_timestamp: i64) -> bool {
+        unimplemented!()
+    }
+
+    fn ffa_purchase(&mut self, ffa_id: u64, item_id: u32, millis_timestamp: i64) -> bool {
+        unimplemented!()
+    }
+
+    fn create_ffa(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u64) -> bool {
+        unimplemented!()
+    }
+
+    fn create_free_budget(&mut self, cents_worth_total: u64, text_message: String, created_timestamp: i64, donor: u64, recipient: u64) -> bool {
+        unimplemented!()
+    }
+
+    fn create_free_count(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u64, recipient: u64) -> bool {
+        unimplemented!()
     }
 }
 
