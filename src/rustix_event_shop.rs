@@ -44,6 +44,12 @@ pub enum BLEvents {
         item_id: u32,
         timestamp: i64,
     },
+    MakeShoppingCartPurchase {
+        user_id: u32,
+        specials : Vec<String>,
+        item_ids : Vec<u32>,
+        timestamp: i64,
+    },
     MakeSpecialPurchase {
         user_id: u32,
         special_name: String,
@@ -113,6 +119,22 @@ impl Event for BLEvents {
                 timestamp,
             } => store.has_item(item_id) && store.has_user(user_id),
             &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => store.has_user(*user_id),
+            &BLEvents::MakeShoppingCartPurchase { ref user_id, ref specials, ref item_ids, ref timestamp } => {
+
+            let mut v : Vec<BLEvents> = Vec::new();
+            for x in item_ids {
+            v.push(BLEvents::MakeSimplePurchase {user_id: *user_id, item_id: *x, timestamp: *timestamp});
+            }
+            for x in specials {
+            v.push(BLEvents::MakeSpecialPurchase {user_id: *user_id, special_name: x.to_string(), timestamp: *timestamp});
+            }
+
+            let mut result = true;
+            for x in v {
+                result = result & x.can_be_applied(store);
+            }
+            return result;
+            }
             &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
             &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
@@ -495,6 +517,22 @@ impl Event for BLEvents {
 
                 true
             },
+            &BLEvents::MakeShoppingCartPurchase { ref user_id, ref specials, ref item_ids, ref timestamp } => {
+                let mut v : Vec<BLEvents> = Vec::new();
+                for x in item_ids {
+                    v.push(BLEvents::MakeSimplePurchase {user_id: *user_id, item_id: *x, timestamp: *timestamp});
+                }
+                for x in specials {
+                    v.push(BLEvents::MakeSpecialPurchase {user_id: *user_id, special_name: x.to_string(), timestamp: *timestamp});
+                }
+
+                let mut result = true;
+                for x in v {
+                    result = result & x.apply(store, config);
+                }
+                return result;
+            },
+
             &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
             &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
