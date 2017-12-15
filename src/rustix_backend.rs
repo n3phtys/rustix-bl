@@ -36,6 +36,8 @@ pub trait WriteBackend {
 
     fn special_purchase(&mut self, user_id: u32, special_name: String, millis_timestamp: i64) -> bool;
 
+    fn cart_purchase(&mut self, user_id: u32, specials: Vec<String>, item_ids: Vec<u32>, millis_timestamp: i64) -> bool;
+
     fn ffa_purchase(&mut self, ffa_id: u64, item_id: u32, millis_timestamp: i64) -> bool;
 
     fn create_ffa(&mut self, allowed_categories : Vec<String>,
@@ -201,6 +203,17 @@ where
                 created_timestamp: created_timestamp,
                 donor: donor,
                 recipient: recipient,
+            },
+            &mut self.datastore,
+        );
+    }
+    fn cart_purchase(&mut self, user_id: u32, specials: Vec<String>, item_ids: Vec<u32>, millis_timestamp: i64) -> bool {
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::MakeShoppingCartPurchase {
+                user_id: user_id,
+                specials: specials,
+                item_ids: item_ids,
+                timestamp: millis_timestamp,
             },
             &mut self.datastore,
         );
