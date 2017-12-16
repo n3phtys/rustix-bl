@@ -158,7 +158,7 @@ impl Event for BLEvents {
         return match self {
             &BLEvents::CreateItem {
                 ref itemname,
-                price_cents,
+                ref price_cents,
                 ref category,
             } => {
                 let id = store.item_id_counter;
@@ -170,7 +170,7 @@ impl Event for BLEvents {
                     datastore::Item {
                         name: itemname.to_string(),
                         item_id: id,
-                        cost_cents: price_cents,
+                        cost_cents: *price_cents,
                         category: category.clone(),
                     },
                 );
