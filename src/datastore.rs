@@ -19,6 +19,8 @@ pub trait DatastoreQueries {
     fn personal_log_filtered(&self, user_id: u32, millis_start_inclusive: i64, millis_end_exclusive: i64) -> Vec<Purchase>;
     fn global_log_filtered(&self, millis_start_inclusive: i64, millis_end_exclusive: i64) -> &[Purchase];
 
+    fn bills_filtered(&self, user_id: Option<u32>, millis_start_inclusive: i64, millis_end_exclusive: i64) -> Vec<Bill>;
+
     fn all_categories(&self) -> Vec<String>;
 }
 
@@ -121,6 +123,33 @@ impl DatastoreQueries for Datastore {
             Some(ref tree) => return tree.extract_top(n as usize),
             None => return vec![],
         };
+    }
+    fn bills_filtered(&self, user_id: Option<u32>, millis_start_inclusive: i64, millis_end_exclusive: i64) -> Vec<Bill> {
+        let v : Vec<Bill> = self.bills.iter()
+            .filter(|b: &&Bill| {
+                matches_usergroup(&user_id, &b.users) && b.timestamp >= millis_start_inclusive && b.timestamp < millis_end_exclusive
+            })
+            .map(|p: &Bill| p.clone())
+            .collect();
+        return v;
+    }
+}
+
+
+fn matches_usergroup(user_id: &Option<u32>, usergroup: &UserGroup) -> bool {
+    if user_id.is_some() {
+        let checked_user_id = user_id.clone().unwrap();
+        return match *usergroup {
+            UserGroup::SingleUser {
+                ref user_id
+            } => *user_id == checked_user_id,
+            UserGroup::AllUsers => true,
+            UserGroup::MultipleUsers {
+                ref user_ids
+            } => user_ids.iter().any(|id| *id == checked_user_id),
+        }
+    } else {
+        return true;
     }
 }
 
