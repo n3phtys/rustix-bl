@@ -300,6 +300,7 @@ pub struct User {
     pub user_id: u32,
     pub is_billed: bool,
     pub highlight_in_ui: bool,
+    pub deleted: bool,
 }
 
 impl Clone for User {
@@ -309,7 +310,8 @@ impl Clone for User {
             external_user_id: self.external_user_id.clone(),
             user_id: self.user_id,
             is_billed: self.is_billed,
-            highlight_in_ui: false,
+            highlight_in_ui: self.highlight_in_ui,
+            deleted: self.deleted,
         };
     }
 }
@@ -322,6 +324,7 @@ pub struct Item {
     pub item_id: u32,
     pub category: Option<String>,
     pub cost_cents: u32,
+    pub deleted: bool,
 }
 
 

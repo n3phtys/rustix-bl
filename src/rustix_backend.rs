@@ -346,7 +346,7 @@ mod tests {
         assert_eq!(backend.datastore.items.get(&1).unwrap().cost_cents, 75);
         assert_eq!(backend.datastore.categories.len(), 1);
         backend.delete_item(1);
-        assert_eq!(backend.datastore.items.len(), 1);
+        assert_eq!(backend.datastore.items.len(), 2);
         assert_eq!(backend.datastore.item_id_counter, 2);
         assert_eq!(
             backend.datastore.items.get(&0).unwrap().name,
@@ -378,7 +378,7 @@ mod tests {
             "klaus".to_string()
         );
         backend.delete_user(0);
-        assert_eq!(backend.datastore.users.len(), 0);
+        assert_eq!(backend.datastore.users.len(), 1);
         assert_eq!(backend.datastore.user_id_counter, 1);
     }
 

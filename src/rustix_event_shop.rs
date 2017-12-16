@@ -172,6 +172,7 @@ impl Event for BLEvents {
                         item_id: id,
                         cost_cents: *price_cents,
                         category: category.clone(),
+                        deleted: false,
                     },
                 );
                 store.item_id_counter = id + 1u32;
@@ -206,6 +207,7 @@ impl Event for BLEvents {
                         user_id: id,
                         is_billed: true,
                         highlight_in_ui: false,
+                        deleted: false,
                     },
                 );
                 store.user_id_counter = id + 1u32;
@@ -370,16 +372,17 @@ impl Event for BLEvents {
                 true
             }
             &BLEvents::DeleteItem { item_id } => {
-                let v = store.items.remove(&item_id);
+                let _ = store.items.get_mut(&item_id).map(|it|{it.deleted = true});
+                let v = store.items.get(&item_id);
                 match v {
                     None => (),
                     Some(item) => {
                         //potentially remove category, if no one else is sharing that category
                         match item.category {
                             None => (),
-                            Some(category) => {
-                                if !store.categories.iter().any(|x| x.eq(&category)) {
-                                    let _ = store.categories.remove(&category);
+                            Some(ref category) => {
+                                if !store.categories.iter().any(|x| x.eq(category)) {
+                                    let _ = store.categories.remove(&category.clone());
                                 }
                             }
                         }
@@ -402,11 +405,23 @@ impl Event for BLEvents {
                         }
                     }
                 }
+
+                {
+                    let mut items_vec: Vec<datastore::Item> = vec![];
+
+                    for (_, v) in &store.items {
+                        if !v.deleted {
+                            items_vec.push(v.clone());
+                        }
+                    }
+
+                    store.items_suffix_tree = MockKDTree::build(&items_vec, false);
+                }
                 true
             }
             &BLEvents::DeleteUser { user_id } => {
                 //remove from user hashmap
-                let _ = store.users.remove(&user_id);
+                let _ = store.users.get_mut(&user_id).map(|it|it.deleted = true);
 
                 //remove user item score
                 let _ = store.drink_scores_per_user.remove(&user_id);
@@ -423,7 +438,9 @@ impl Event for BLEvents {
                     let mut users_vec: Vec<datastore::User> = vec![];
 
                     for (_, v) in &store.users {
-                        users_vec.push(v.clone());
+                        if !v.deleted {
+                            users_vec.push(v.clone());
+                        }
                     }
 
                     store.users_suffix_tree = MockKDTree::build(&users_vec, false);
