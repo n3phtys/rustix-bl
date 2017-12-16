@@ -26,8 +26,11 @@ pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersi
 pub trait WriteBackend {
     fn create_bill(&mut self, timestamp: i64, user_ids: UserGroup, comment: String) -> bool;
     fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>)
-        -> bool;
+                   -> bool;
     fn create_user(&mut self, username: String) -> bool;
+    fn update_item(&mut self, item_id: u32, itemname: String, price_cents: u32, category: Option<String>)
+                   -> bool;
+    fn update_user(&mut self, user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>) -> bool;
 
     fn delete_user(&mut self, user_id: u32) -> bool;
     fn delete_item(&mut self, item_id: u32) -> bool;
@@ -214,6 +217,30 @@ where
                 specials: specials,
                 item_ids: item_ids,
                 timestamp: millis_timestamp,
+            },
+            &mut self.datastore,
+        );
+    }
+    fn update_item(&mut self, item_id: u32, itemname: String, price_cents: u32, category: Option<String>) -> bool {
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::UpdateItem {
+                item_id: item_id,
+                itemname: itemname,
+                price_cents: price_cents,
+                category: category,
+            },
+            &mut self.datastore,
+        );
+    }
+
+    fn update_user(&mut self, user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>) -> bool {
+        return self.persistencer.test_store_apply(
+            &rustix_event_shop::BLEvents::UpdateUser {
+                user_id: user_id,
+                username: username,
+                is_billed: is_billed,
+                is_highlighted: is_highlighted,
+                external_user_id: external_user_id,
             },
             &mut self.datastore,
         );
