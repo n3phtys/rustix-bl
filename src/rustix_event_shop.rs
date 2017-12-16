@@ -37,6 +37,12 @@ pub enum BLEvents {
         category: Option<String>,
     },
     CreateUser { username: String },
+    UpdateUser { user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>},
+    UpdateItem {
+        item_id: u32,
+        itemname: String,
+        price_cents: u32,
+        category: Option<String>,},
     DeleteItem { item_id: u32 },
     DeleteUser { user_id: u32 },
     MakeSimplePurchase {
@@ -111,6 +117,11 @@ impl Event for BLEvents {
                 ref user_ids,
                 ref comment,
             } => !store.purchases.is_empty(),
+            &BLEvents::UpdateItem { ref item_id,
+                ref itemname,
+                ref price_cents,
+                ref category } => store.has_item(*item_id),
+            &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id } => store.has_user(*user_id),
             &BLEvents::DeleteItem { item_id } => store.has_item(item_id),
             &BLEvents::DeleteUser { user_id } => store.has_user(user_id),
             &BLEvents::MakeSimplePurchase {
@@ -191,8 +202,10 @@ impl Event for BLEvents {
                     id,
                     datastore::User {
                         username: username.to_string(),
+                        external_user_id: None,
                         user_id: id,
                         is_billed: true,
+                        highlight_in_ui: false,
                     },
                 );
                 store.user_id_counter = id + 1u32;
@@ -227,7 +240,25 @@ impl Event for BLEvents {
 
 
                 true
-            }
+            },
+            &BLEvents::UpdateItem { ref item_id,
+                ref itemname,
+                ref price_cents,
+                ref category } => {
+                let mut e = store.items.get_mut(item_id).unwrap();
+                e.name = itemname.to_string();
+                e.cost_cents = *price_cents;
+                e.category = category.clone();
+                true
+            },
+            &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id } => {
+                let mut e = store.users.get_mut(user_id).unwrap();
+                e.username = username.to_string();
+                e.is_billed = *is_billed;
+                e.highlight_in_ui = *is_highlighted;
+                e.external_user_id = external_user_id.clone();
+                true
+            },
             &BLEvents::CreateBill {
                 timestamp,
                 ref user_ids,

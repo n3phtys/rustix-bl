@@ -296,22 +296,20 @@ impl Default for UserGroup {
 #[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
 pub struct User {
     pub username: String,
-    //external_user_id: u32, //TODO: external_user_id used in external mapping
+    pub external_user_id: Option<String>,
     pub user_id: u32,
-    //subuser_to: Option<u32>, //TODO: implement to group users
     pub is_billed: bool,
-
-
-    //pub cents_since_last_bill: u64,
-    //pub cents_since_creation: u64,
+    pub highlight_in_ui: bool,
 }
 
 impl Clone for User {
     fn clone(&self) -> Self {
         return User {
             username: self.username.to_string(),
+            external_user_id: self.external_user_id.clone(),
             user_id: self.user_id,
             is_billed: self.is_billed,
+            highlight_in_ui: false,
         };
     }
 }
