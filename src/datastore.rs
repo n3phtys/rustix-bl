@@ -331,9 +331,16 @@ pub struct Item {
 pub struct Bill {
     pub timestamp: i64,
     pub users: UserGroup,
+
+    #[serde(skip)]
     pub count_hash_map: HashMap<(u32, String), HashMap<(u32, String), u32>>,
+
+    #[serde(skip)]
     pub special_map: HashMap<(u32, String), Vec<(String, i64)>>,
+
+    #[serde(skip)]
     pub sum_of_cost_hash_map: HashMap<(u32, String), HashMap<(u32, String), u32>>,
+
     pub comment: String,
 }
 
