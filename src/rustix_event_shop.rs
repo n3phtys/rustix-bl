@@ -146,8 +146,16 @@ impl Event for BLEvents {
             }
             return result;
             }
-            &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
-            &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
+            &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => {
+                let mut b = false;
+                let x : Option<&Freeby> = store.open_ffa.iter().find(|x|x.get_id() == ffa_id);
+                let item: &Item = store.items.get(&item_id).unwrap();
+                x.filter(|ffa|ffa.allows(item)).is_some()
+            },
+            &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } =>
+                {
+                    return true;
+                },
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => store.purchase_count >= unique_id,
@@ -582,7 +590,27 @@ impl Event for BLEvents {
             },
 
             &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
-            &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => unimplemented!(),
+            &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => {
+                let id = {
+                    let x = store.freeby_id_counter + 1;
+                    store.freeby_id_counter = x;
+                    x
+                };
+
+                store.open_ffa.push(Freeby::FFA{
+                id: id,
+                allowed_categories: allowed_categories.to_vec(),
+                allowed_drinks: allowed_drinks.to_vec(),
+                allowed_number_total: *allowed_number_total,
+                allowed_number_used : 0,
+                text_message : text_message.to_string(),
+                created_timestamp : *created_timestamp,
+                donor: *donor,
+                });
+
+
+                true
+            },
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => {

@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+#![feature(option_filter)]
 
 #[macro_use]
 pub extern crate derive_builder;

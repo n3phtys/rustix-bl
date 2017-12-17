@@ -47,6 +47,9 @@ pub struct Datastore {
     pub balance_cost_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
     pub balance_count_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
     pub balance_special: HashMap<(u32, String), Vec<(String, i64)>>,
+    pub used_up_freebies: Vec<Freeby>, //completely mixed
+    pub open_freebies: HashMap<u32, Vec<Freeby>>, //per recipient
+    pub open_ffa: Vec<Freeby>,
 
     // keeps hashmap of user_id => user
     // keeps hashmap of user_id => user
@@ -58,7 +61,7 @@ pub struct Datastore {
     // keeps per user item scoring tree
     // keeps per user item simplified bill (hashmap<name,hasmap<price,number>>)
     pub user_id_counter: u32,
-
+    pub freeby_id_counter: u64,
     pub item_id_counter: u32,
     pub categories: HashSet<String>,
 }
@@ -270,7 +273,11 @@ impl Default for Datastore {
             balance_cost_per_user: HashMap::new(),
             balance_count_per_user: HashMap::new(),
             balance_special: HashMap::new(),
+            used_up_freebies: Vec::new(),
+            open_freebies: HashMap::new(),
+            open_ffa: Vec::new(),
             user_id_counter: 0,
+            freeby_id_counter: 0,
             item_id_counter: 0,
             categories: HashSet::new(),
         };
@@ -362,6 +369,7 @@ pub trait PurchaseFunctions {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Freeby {
     FFA {
+        id: u64,
         allowed_categories : Vec<String>,
         allowed_drinks : Vec<u32>,
         allowed_number_total : u16,
@@ -371,6 +379,7 @@ pub enum Freeby {
         donor : u64,
     },
     Transfer {
+        id: u64,
         cents_worth_total : u64,
         cents_worth_used : u64,
         text_message : String,
@@ -379,6 +388,7 @@ pub enum Freeby {
         recipient : u64,
     },
     Classic {
+        id: u64,
         allowed_categories : Vec<String>,
         allowed_drinks : Vec<u32>,
         allowed_number_total : u16,
@@ -389,7 +399,6 @@ pub enum Freeby {
         recipient : u64,
     },
 }
-
 
 /*
 return match *self {
@@ -434,6 +443,7 @@ impl FreebyAble for Freeby {
     fn message(&self) -> &str {
         return match *self {
             Freeby::Classic {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -446,6 +456,7 @@ impl FreebyAble for Freeby {
                 text_message
             },
             Freeby::Transfer{
+                ref id,
                 ref cents_worth_total,
                 ref cents_worth_used,
                 ref text_message,
@@ -456,6 +467,7 @@ impl FreebyAble for Freeby {
                 text_message
             },
             Freeby::FFA {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -468,10 +480,51 @@ impl FreebyAble for Freeby {
             },
         };
     }
+    fn get_id(&self) -> u64 {
+        return match *self {
+            Freeby::Classic {
+                ref id,
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                *id
+            },
+            Freeby::Transfer{
+                ref id,
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                *id
+            },
+            Freeby::FFA {
+                ref id,
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                *id
+            },
+        };
+    }
 
     fn get_donor(&self) -> u64 {
         return match *self {
             Freeby::Classic {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -484,6 +537,7 @@ impl FreebyAble for Freeby {
                 *donor
             },
             Freeby::Transfer{
+                ref id,
                 ref cents_worth_total,
                 ref cents_worth_used,
                 ref text_message,
@@ -494,6 +548,7 @@ impl FreebyAble for Freeby {
                 *donor
             },
             Freeby::FFA {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -510,6 +565,7 @@ impl FreebyAble for Freeby {
     fn allowed_categories(&self) -> &[String] {
         return match *self {
             Freeby::Classic {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -522,6 +578,7 @@ impl FreebyAble for Freeby {
                 allowed_categories
             },
             Freeby::Transfer{
+                ref id,
                 ref cents_worth_total,
                 ref cents_worth_used,
                 ref text_message,
@@ -532,6 +589,7 @@ impl FreebyAble for Freeby {
                 &[]
             },
             Freeby::FFA {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -548,6 +606,7 @@ impl FreebyAble for Freeby {
     fn allowed_items(&self) -> &[u32] {
         return match *self {
             Freeby::Classic {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -560,6 +619,7 @@ impl FreebyAble for Freeby {
                 allowed_drinks
             },
             Freeby::Transfer{
+                ref id,
                 ref cents_worth_total,
                 ref cents_worth_used,
                 ref text_message,
@@ -570,6 +630,7 @@ impl FreebyAble for Freeby {
                 &[]
             },
             Freeby::FFA {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -586,6 +647,7 @@ impl FreebyAble for Freeby {
     fn left(&self) -> u16 {
         return match *self {
             Freeby::Classic {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -598,6 +660,7 @@ impl FreebyAble for Freeby {
                 (*allowed_number_total) -  (*allowed_number_used)
             },
             Freeby::Transfer{
+                ref id,
                 ref cents_worth_total,
                 ref cents_worth_used,
                 ref text_message,
@@ -608,6 +671,7 @@ impl FreebyAble for Freeby {
                 0u16
             },
             Freeby::FFA {
+                ref id,
                 ref allowed_categories,
                 ref allowed_drinks,
                 ref allowed_number_total,
@@ -625,6 +689,7 @@ impl FreebyAble for Freeby {
 
 pub trait FreebyAble {
     fn message(&self) -> &str;
+    fn get_id(&self) -> u64;
     fn get_donor(&self) -> u64;
     fn allowed_categories(&self) -> &[String];
     fn allowed_items(&self) -> &[u32];
@@ -632,7 +697,7 @@ pub trait FreebyAble {
         return FreebyAble::left(self) != 0;
     }
     fn left(&self) -> u16;
-    fn allows(&self, items: &HashMap<u64, Item>, item_to_allow : &Item) -> bool {
+    fn allows(&self, item_to_allow : &Item) -> bool {
         for id in self.allowed_items() {
             if *id == item_to_allow.item_id {
                 return true;
