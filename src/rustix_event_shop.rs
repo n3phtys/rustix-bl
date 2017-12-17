@@ -72,7 +72,7 @@ pub enum BLEvents {
         allowed_number_total : u16,
         text_message : String,
         created_timestamp : i64,
-        donor : u64,
+        donor : u32,
     },
     CreateFreeCount {
         allowed_categories : Vec<String>,
@@ -80,15 +80,15 @@ pub enum BLEvents {
         allowed_number_total : u16,
         text_message : String,
         created_timestamp : i64,
-        donor : u64,
-        recipient : u64,
+        donor : u32,
+        recipient : u32,
     },
     CreateFreeBudget {
         cents_worth_total : u64,
         text_message : String,
         created_timestamp : i64,
-        donor : u64,
-        recipient : u64,
+        donor : u32,
+        recipient : u32,
     },
     UndoPurchase { unique_id: u64 },
     CreateBill {
@@ -589,7 +589,164 @@ impl Event for BLEvents {
                 return result;
             },
 
-            &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => unimplemented!(),
+            &BLEvents::MakeFreeForAllPurchase { ffa_id, item_id, timestamp } => {
+
+                //get new id
+                let idx: u64 = store.purchase_count + 1;
+                store.purchase_count = idx;
+
+
+                let index = store.open_ffa.iter().position(|x| x.get_id() == ffa_id).unwrap();
+                let mut freeby : Freeby = store.open_ffa.remove(index);
+
+                let user_id: u32 = freeby.get_donor();
+
+                {
+                //add to purchase vector
+                store.purchases.push(datastore::Purchase::FFAPurchase {
+                    unique_id: idx,
+                    timestamp_epoch_millis: timestamp,
+                    item_id: item_id,
+                    freeby_id: freeby.get_id(),
+                    donor: freeby.get_donor(),
+                });
+            }
+
+                {
+
+                    println!("Freeby was : {:?}", freeby);
+                    //decrease existing freeby
+                freeby.decrement();
+                    println!("Freeby is : {:?}", freeby);
+            }
+
+                //potentially move used up freeby to "old" stack
+                if freeby.left() == 0 {
+                    //add to new vec
+                    store.used_up_freebies.push(freeby);
+                } else {
+                    store.open_ffa.insert(index, freeby);
+                }
+
+                //add to cost / count map of donor
+
+                {
+                    //increase cost map value
+                    let alt_hashmap_1 = HashMap::new();
+                    let username = store.users.get(&user_id).unwrap().username.to_string();
+                    let itemname = store.items.get(&item_id).unwrap().name.to_string();
+                    let user_key = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                    let item_key = (item_id, store.items.get(&item_id).unwrap().name.to_string());
+                    let mut old_cost_map = store
+                        .balance_cost_per_user
+                        .remove(&user_key)
+                        .unwrap_or(alt_hashmap_1);
+                    let old_cost_value = *old_cost_map.get(&item_key).unwrap_or(&0);
+                    old_cost_map.insert(
+                        item_key,
+                        old_cost_value
+                            + store
+                            .items
+                            .get(&item_id)
+                            .map(|item| item.cost_cents)
+                            .unwrap_or(0),
+                    );
+                    store.balance_cost_per_user.insert(user_key, old_cost_map);
+
+                    //increase count map value
+                    let alt_hashmap_2 = HashMap::new();
+                    let user_key2 : (u32, String) = (user_id, username.to_string());
+                    let user_key3 : (u32, String) = (user_id, username.to_string());
+                    let item_key2 : (u32, String) = (item_id, itemname.to_string());
+                    let item_key3 : (u32, String) = (item_id, itemname.to_string());
+                    let mut old_count_map = store
+                        .balance_count_per_user
+                        .remove(&user_key2)
+                        .unwrap_or(alt_hashmap_2);
+                    let old_count_value = *old_count_map.get(&item_key2).unwrap_or(&0);
+                    old_count_map.insert(item_key3, old_count_value + 1);
+                    store.balance_count_per_user.insert(user_key3, old_count_map);
+                }
+
+                true
+
+                /*
+
+
+                let was_in_before = store.top_users.contains(&user_id);
+
+                // increase item score for user
+                if let Some(ref mut drinkscore) = store.drink_scores_per_user.get_mut(&user_id) {
+                    drinkscore.increment_by_one(item_id);
+                    // if not in top items, potentially extract new set
+                    if let Some(topitems) = store.top_drinks_per_user.get_mut(&user_id) {
+                        if !(topitems.contains(&item_id)) {
+                            *topitems = hashset(
+                                drinkscore
+                                    .extract_top(config.top_drinks_per_user)
+                                    .as_slice(),
+                            );
+                        }
+                    }
+                }
+
+                // increase user score
+                store.top_user_scores.increment_by_one(user_id);
+
+                // if not in top users, potentially extract new set
+                if !(store.top_users.contains(&user_id)) {
+                    println!("not in top users for userid = {}", user_id);
+                    store.top_users = hashset(
+                        store
+                            .top_user_scores
+                            .extract_top(config.users_in_top_users)
+                            .as_slice(),
+                    );
+                } else {
+
+                }
+
+                //increase cost map value
+                let alt_hashmap_1 = HashMap::new();
+                let username = store.users.get(&user_id).unwrap().username.to_string();
+                let itemname = store.items.get(&item_id).unwrap().name.to_string();
+                let user_key = (user_id, store.users.get(&user_id).unwrap().username.to_string());
+                let item_key = (item_id, store.items.get(&item_id).unwrap().name.to_string());
+                let mut old_cost_map = store
+                    .balance_cost_per_user
+                    .remove(&user_key)
+                    .unwrap_or(alt_hashmap_1);
+                let old_cost_value = *old_cost_map.get(&item_key).unwrap_or(&0);
+                old_cost_map.insert(
+                    item_key,
+                    old_cost_value
+                        + store
+                        .items
+                        .get(&item_id)
+                        .map(|item| item.cost_cents)
+                        .unwrap_or(0),
+                );
+                store.balance_cost_per_user.insert(user_key, old_cost_map);
+
+                //increase count map value
+                let alt_hashmap_2 = HashMap::new();
+                let user_key2 : (u32, String) = (user_id, username.to_string());
+                let user_key3 : (u32, String) = (user_id, username.to_string());
+                let item_key2 : (u32, String) = (item_id, itemname.to_string());
+                let item_key3 : (u32, String) = (item_id, itemname.to_string());
+                let mut old_count_map = store
+                    .balance_count_per_user
+                    .remove(&user_key2)
+                    .unwrap_or(alt_hashmap_2);
+                let old_count_value = *old_count_map.get(&item_key2).unwrap_or(&0);
+                old_count_map.insert(item_key3, old_count_value + 1);
+                store.balance_count_per_user.insert(user_key3, old_count_map);
+
+
+                let is_in_now = store.top_users.contains(&user_id);
+
+                ((!was_in_before) & (is_in_now))*/
+            },
             &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } => {
                 let id = {
                     let x = store.freeby_id_counter + 1;

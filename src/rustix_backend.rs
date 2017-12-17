@@ -48,21 +48,21 @@ pub trait WriteBackend {
                          allowed_number_total : u16,
                          text_message : String,
                          created_timestamp : i64,
-                         donor : u64) -> bool;
+                         donor : u32) -> bool;
 
     fn create_free_budget(&mut self, cents_worth_total : u64,
                           text_message : String,
                           created_timestamp : i64,
-                          donor : u64,
-                          recipient : u64) -> bool;
+                          donor : u32,
+                          recipient : u32) -> bool;
 
     fn create_free_count(&mut self, allowed_categories : Vec<String>,
                          allowed_drinks : Vec<u32>,
                          allowed_number_total : u16,
                          text_message : String,
                          created_timestamp : i64,
-                         donor : u64,
-                         recipient : u64) -> bool;
+                         donor : u32,
+                         recipient : u32) -> bool;
 
     fn undo_purchase(&mut self, unique_id: u64) -> bool;
 
@@ -167,7 +167,7 @@ where
         );
     }
 
-    fn create_ffa(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u64) -> bool {
+    fn create_ffa(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u32) -> bool {
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateFreeForAll {
                 allowed_categories: allowed_categories,
@@ -181,7 +181,7 @@ where
         );
     }
 
-    fn create_free_budget(&mut self, cents_worth_total: u64, text_message: String, created_timestamp: i64, donor: u64, recipient: u64) -> bool {
+    fn create_free_budget(&mut self, cents_worth_total: u64, text_message: String, created_timestamp: i64, donor: u32, recipient: u32) -> bool {
 
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateFreeBudget {
@@ -195,7 +195,7 @@ where
         );
     }
 
-    fn create_free_count(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u64, recipient: u64) -> bool {
+    fn create_free_count(&mut self, allowed_categories: Vec<String>, allowed_drinks: Vec<u32>, allowed_number_total: u16, text_message: String, created_timestamp: i64, donor: u32, recipient: u32) -> bool {
 
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateFreeCount {
@@ -769,6 +769,39 @@ mod tests {
 
         assert_eq!(bill.special_map.len(), 1);
         assert_eq!(backend.datastore.balance_special.len(), 0);
+    }
+
+
+
+
+    #[test]
+    fn simple_ffa_purchase() {
+        let mut backend = build_test_backend();
+        let ts1 = 1i64;
+        let ts2 = 2i64;
+
+        backend.create_user("klaus".to_string());
+        backend.create_item("item 1".to_string(), 45, None);
+        backend.create_ffa(Vec::new(), vec![0], 1, "some textmessage".to_string(), ts1, 0);
+
+        println!("open_ffa = {:?}\nused_up = {:?}", backend.datastore.open_ffa, backend.datastore.used_up_freebies);
+        //freeby should be on new vec
+        assert_eq!(backend.datastore.open_ffa.len(), 1);
+        assert_eq!(backend.datastore.open_freebies.len(), 0);
+        assert_eq!(backend.datastore.used_up_freebies.len(), 0);
+        assert_eq!(backend.datastore.open_ffa[0].get_id(), 1);
+        backend.ffa_purchase(1, 0, ts2);
+
+        assert_eq!(backend.datastore.purchases.len(), 1);
+        assert_eq!(backend.datastore.purchase_count, 1);
+
+        println!("open_ffa = {:?}\nused_up = {:?}", backend.datastore.open_ffa, backend.datastore.used_up_freebies);
+        //freeby should be on used up stack and not the new one
+        assert_eq!(backend.datastore.open_ffa.len(), 0);
+        assert_eq!(backend.datastore.open_freebies.len(), 0);
+        assert_eq!(backend.datastore.used_up_freebies.len(), 1);
+
+
     }
 
 

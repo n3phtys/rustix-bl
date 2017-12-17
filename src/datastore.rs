@@ -359,7 +359,6 @@ pub trait PurchaseFunctions {
     fn get_user_id(&self) -> &u32;
     fn get_item_id(&self) -> &u32;
     fn get_timestamp(&self) -> &i64;
-    fn get_special_name(&self) -> String;
 }
 
 
@@ -376,7 +375,7 @@ pub enum Freeby {
         allowed_number_used : u16,
         text_message : String,
         created_timestamp : i64,
-        donor : u64,
+        donor : u32,
     },
     Transfer {
         id: u64,
@@ -384,8 +383,8 @@ pub enum Freeby {
         cents_worth_used : u64,
         text_message : String,
         created_timestamp : i64,
-        donor : u64,
-        recipient : u64,
+        donor : u32,
+        recipient : u32,
     },
     Classic {
         id: u64,
@@ -395,8 +394,8 @@ pub enum Freeby {
         allowed_number_used : u16,
         text_message : String,
         created_timestamp : i64,
-        donor : u64,
-        recipient : u64,
+        donor : u32,
+        recipient : u32,
     },
 }
 
@@ -521,7 +520,7 @@ impl FreebyAble for Freeby {
         };
     }
 
-    fn get_donor(&self) -> u64 {
+    fn get_donor(&self) -> u32 {
         return match *self {
             Freeby::Classic {
                 ref id,
@@ -680,7 +679,50 @@ impl FreebyAble for Freeby {
                 ref created_timestamp,
                 ref donor
             } => {
+                println!("total = {} & used = {}", allowed_number_total, allowed_number_used);
                 (*allowed_number_total) -  (*allowed_number_used)
+            },
+        };
+    }
+    fn decrement(&mut self) -> () {
+        return match *self {
+            Freeby::Classic {
+                ref id,
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref mut allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                let old: u16 = *allowed_number_used;
+                *allowed_number_used = old + 1;
+            },
+            Freeby::Transfer{
+                ref id,
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                unimplemented!();
+            },
+            Freeby::FFA {
+                ref id,
+                ref allowed_categories,
+                ref allowed_drinks,
+                ref allowed_number_total,
+                ref mut allowed_number_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor
+            } => {
+                let old: u16 = *allowed_number_used;
+                *allowed_number_used = old + 1;
             },
         };
     }
@@ -690,12 +732,13 @@ impl FreebyAble for Freeby {
 pub trait FreebyAble {
     fn message(&self) -> &str;
     fn get_id(&self) -> u64;
-    fn get_donor(&self) -> u64;
+    fn get_donor(&self) -> u32;
     fn allowed_categories(&self) -> &[String];
     fn allowed_items(&self) -> &[u32];
     fn is_open(&self) -> bool {
         return FreebyAble::left(self) != 0;
     }
+    fn decrement(&mut self) -> ();
     fn left(&self) -> u16;
     fn allows(&self, item_to_allow : &Item) -> bool {
         for id in self.allowed_items() {
@@ -718,24 +761,20 @@ pub trait FreebyAble {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Purchase {
-    /* SpecialPurchase {
-        timestamp_seconds: u32,
-        name: String,
-        consumer_id: u32,
-    },*/
+    FFAPurchase {
+        unique_id: u64,
+        timestamp_epoch_millis: i64,
+        item_id: u32,
+        freeby_id: u64,
+        donor: u32,
+    },
     UndoPurchase { unique_id: u64 },
     SimplePurchase {
         unique_id: u64,
         timestamp_epoch_millis: i64,
         item_id: u32, //buys one instance of this item
         consumer_id: u32,
-    }, /*,
-    PaidForPurchase {
-        timestamp_seconds: u32,
-        item_id: u32, //buys one instance of this item
-        consumer_id: u32,
-        payer_id: u32, //paid for by this person
-    }*/
+    },
 }
 
 
@@ -744,7 +783,7 @@ impl PurchaseFunctions for Purchase {
         match self {
             &Purchase::UndoPurchase { ref unique_id } => {
                 return *unique_id;
-            }
+            },
             &Purchase::SimplePurchase {
                 ref unique_id,
                 ref timestamp_epoch_millis,
@@ -752,7 +791,16 @@ impl PurchaseFunctions for Purchase {
                 ref consumer_id,
             } => {
                 return *unique_id;
-            }
+            },
+            &Purchase::FFAPurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref freeby_id,
+                ref donor,
+            } => {
+                return *unique_id;
+            },
         }
     }
 
@@ -766,6 +814,15 @@ impl PurchaseFunctions for Purchase {
                 ref timestamp_epoch_millis,
                 ref item_id,
                 ref consumer_id,
+            } => {
+                return *unique_id == other;
+            },
+            &Purchase::FFAPurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref freeby_id,
+                ref donor,
             } => {
                 return *unique_id == other;
             }
@@ -783,6 +840,15 @@ impl PurchaseFunctions for Purchase {
                 ref consumer_id,
             } => {
                 return consumer_id;
+            },
+            &Purchase::FFAPurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref freeby_id,
+                ref donor,
+            } => {
+                return donor;
             }
         }
     }
@@ -795,6 +861,15 @@ impl PurchaseFunctions for Purchase {
                 ref timestamp_epoch_millis,
                 ref item_id,
                 ref consumer_id,
+            } => {
+                return item_id;
+            },
+            &Purchase::FFAPurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref freeby_id,
+                ref donor,
             } => {
                 return item_id;
             }
@@ -811,10 +886,16 @@ impl PurchaseFunctions for Purchase {
                 ref consumer_id,
             } => {
                 return timestamp_epoch_millis;
+            },
+            &Purchase::FFAPurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref freeby_id,
+                ref donor,
+            } => {
+                return timestamp_epoch_millis;
             }
         }
-    }
-    fn get_special_name(&self) -> String {
-        unimplemented!()
     }
 }
