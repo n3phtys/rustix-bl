@@ -10,6 +10,7 @@ use suffix_rs::KDTree;
 use left_threaded_avl_tree::AVLTree;
 
 pub trait DatastoreQueries {
+    fn get_purchase_timestamp(&self, purchase_id: u64) -> Option<i64>;
     fn top_user_ids(&self, n : u16) -> Vec<u32>;
     fn top_item_ids(&self, user_id: u32, n : u8) -> Vec<u32>;
 
@@ -79,6 +80,11 @@ impl SuffixTreeRebuildable for Datastore {
 
 
 impl DatastoreQueries for Datastore {
+
+    fn get_purchase_timestamp(&self, purchase_id: u64) -> Option<i64> {
+        return self.get_purchase(purchase_id).map(|p| *(p.get_timestamp()));
+    }
+
     fn top_user_ids(&self, n: u16) -> Vec<u32> {
         return self.top_user_scores.extract_top(n as usize);
     }
