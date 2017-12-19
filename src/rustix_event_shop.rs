@@ -259,6 +259,7 @@ impl Event for BLEvents {
                 e.name = itemname.to_string();
                 e.cost_cents = *price_cents;
                 e.category = category.clone();
+
                 true
             },
             &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id } => {
@@ -267,6 +268,14 @@ impl Event for BLEvents {
                 e.is_billed = *is_billed;
                 e.highlight_in_ui = *is_highlighted;
                 e.external_user_id = external_user_id.clone();
+
+                //if highlight_in_ui changed, update store.highlighted_users
+                if *is_highlighted {
+                    let _ = store.highlighted_users.insert(*user_id);
+                } else {
+                    let _ = store.highlighted_users.remove(user_id);
+                }
+
                 true
             },
             &BLEvents::CreateBill {
@@ -428,6 +437,13 @@ impl Event for BLEvents {
                 true
             }
             &BLEvents::DeleteUser { user_id } => {
+
+
+                //if highlight_in_ui, update store.highlighted_users
+                if store.users.get(&user_id).filter(|x|x.highlight_in_ui).is_some() {
+                    let _ = store.highlighted_users.remove(&user_id);
+                }
+
                 //remove from user hashmap
                 let _ = store.users.get_mut(&user_id).map(|it|it.deleted = true);
 
