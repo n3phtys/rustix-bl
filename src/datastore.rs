@@ -26,6 +26,7 @@ pub trait DatastoreQueries {
 
 
     fn get_mut_purchase(&mut self, id: &u64) -> Option<&mut Purchase>;
+    fn get_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Option<&Bill>;
     fn get_mut_bill(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<&mut Bill>;
 
     fn get_specials_to_bill_mut(&mut self, timestamp_from: i64, timestamp_to: i64) -> Vec<&mut Purchase>;
@@ -192,7 +193,9 @@ impl DatastoreQueries for Datastore {
             }
             return xs;
         }
-
+    fn get_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Option<&Bill> {
+        return self.bills.iter().find(|b| b.timestamp_from == timestamp_from && b.timestamp_to == timestamp_to);
+    }
 }
 
 
