@@ -98,11 +98,17 @@ pub enum BLEvents {
         comment: String,
     },
     FinalizeBill {
+        timestamp_from: i64, //timestamps uniquely identify a bill
+        timestamp_to: i64,
 
     },
     DeleteUnfinishedBill {
         timestamp_from: i64, //timestamps uniquely identify a bill
         timestamp_to: i64,
+    },
+    SetPriceForSpecial {
+        unique_id: u64,
+        price: u32,
     }
 }
 
@@ -171,6 +177,9 @@ impl Event for BLEvents {
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => store.purchase_count >= unique_id,
+            &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => unimplemented!(),
+            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => unimplemented!(),
+            &BLEvents::SetPriceForSpecial { unique_id, price } => unimplemented!(),
         };
     }
 
@@ -296,106 +305,10 @@ impl Event for BLEvents {
                 ref user_ids,
                 ref comment,
             } => {
-                unimplemented!(); //TODO: has to be reprogrammed to only create the bill (finalization does everything else)
-                let user_ids_copy: datastore::UserGroup = user_ids.clone();
-                let user_ids_other_copy: datastore::UserGroup = user_ids.clone();
-
-                let mut counts: HashMap<(u32, String), HashMap<(u32, String), u32>> = HashMap::new();
-                let mut costs: HashMap<(u32, String), HashMap<(u32, String), u32>> = HashMap::new();
-
-                let mut specials: HashMap<(u32, String), Vec<(String, i64)>> = HashMap::new();
-
-                match user_ids_copy {
-                    datastore::UserGroup::AllUsers => for (user_id , user) in &store.users {
-                        counts.insert(
-                            (*user_id, user.username.to_string()),
-                            store
-                                .balance_count_per_user
-                                .remove(&(*user_id, user.username.to_string()))
-                                .unwrap_or(HashMap::new()),
-                        );
-                        costs.insert(
-                            (*user_id, user.username.to_string()),
-                            store
-                                .balance_cost_per_user
-                                .remove(&(*user_id, user.username.to_string()))
-                                .unwrap_or(HashMap::new()),
-                        );
-                        specials.insert(
-                            (*user_id, user.username.to_string()),
-                            store
-                                .balance_special
-                                .remove(&(*user_id, user.username.to_string()))
-                                .unwrap_or(Vec::new()),
-                        );
-                    },
-                    datastore::UserGroup::SingleUser { user_id } => {
-                        let key : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key1 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key2 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key3 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key4 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key5 : (u32, String) = (user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        counts.insert(
-                            key,
-                            store
-                                .balance_count_per_user
-                                .remove(&(key2))
-                                .unwrap_or(HashMap::new()),
-                        );
-                        costs.insert(
-                            key1,
-                            store
-                                .balance_cost_per_user
-                                .remove(&key3)
-                                .unwrap_or(HashMap::new()),
-                        );
-                        specials.insert(
-                            key4,
-                            store
-                                .balance_special
-                                .remove(&key5)
-                                .unwrap_or(Vec::new()),
-                        );
-                    }
-                    datastore::UserGroup::MultipleUsers { ref user_ids } => for user_id in user_ids
-                    {
-                        let name : String = store.users.get(user_id).unwrap().username.to_string();
-                        let key : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key1 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key2 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key3 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key4 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        let key5 : (u32, String) = (*user_id, store.users.get(&user_id).unwrap().username.to_string());
-                        //let key : (u32, String) = (*user_id, name );
-                        counts.insert(
-                            key,
-                            store
-                                .balance_count_per_user
-                                .remove(&key1)
-                                .unwrap_or(HashMap::new()),
-                        );
-                        costs.insert(
-                            key2,
-                            store
-                                .balance_cost_per_user
-                                .remove(&key3)
-                                .unwrap_or(HashMap::new()),
-                        );
-                        specials.insert(
-                            key4,
-                            store
-                                .balance_special
-                                .remove(&key5)
-                                .unwrap_or(Vec::new()),
-                        );
-                    },
-                };
-
                 store.bills.push(datastore::Bill {
                     timestamp_from: *timestamp_from,
                     timestamp_to: *timestamp_to,
-                    users: user_ids_other_copy,
+                    users: user_ids.clone(),
                     bill_state: datastore::BillState::Created,
                     users_that_will_not_be_billed: HashSet::new(),
                     comment: comment.to_string(),
@@ -592,19 +505,23 @@ impl Event for BLEvents {
 
                 let is_in_now = store.top_users.contains(&user_id);
 
+
+
                 ((!was_in_before) & (is_in_now))
             }
             &BLEvents::MakeSpecialPurchase { ref user_id, ref special_name, ref timestamp } => {
+
                 let idx: u64 = store.purchase_count + 1;
                 store.purchase_count = idx;
 
-                let key1 : (u32, String) = (*user_id, store.users.get(user_id).map(|x|x.username.to_string()).unwrap_or("".to_string()));
-                let key2 : (u32, String) = (*user_id, store.users.get(user_id).map(|x|x.username.to_string()).unwrap_or("".to_string()));
-                let mut old_value = store.balance_special.remove(&key1).unwrap_or(Vec::new());
 
-                old_value.push((special_name.to_string(), *timestamp));
-
-                store.balance_special.insert(key2, old_value);
+                store.purchases.push(datastore::Purchase::SpecialPurchase {
+                    unique_id: idx,
+                    timestamp_epoch_millis: *timestamp,
+                    special_name: special_name.to_string(),
+                    specialcost: 0,
+                    consumer_id: *user_id,
+                });
 
                 true
             },
@@ -847,7 +764,11 @@ impl Event for BLEvents {
 
 
                 old_size == index + 1
-            }
+            },
+            //removes purchases from global list and also recomputes counts
+            &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => unimplemented!(),
+            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => unimplemented!(),
+            &BLEvents::SetPriceForSpecial { unique_id, price } => unimplemented!(),
         };
     }
 }

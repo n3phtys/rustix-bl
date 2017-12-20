@@ -23,6 +23,9 @@ pub trait DatastoreQueries {
     fn bills_filtered(&self, user_id: Option<u32>, millis_start_inclusive: i64, millis_end_exclusive: i64) -> Vec<Bill>;
 
     fn all_categories(&self) -> Vec<String>;
+
+
+    fn get_mut_purchase(&mut self, id: &u64) -> Option<&mut Purchase>;
 }
 
 
@@ -48,7 +51,6 @@ pub struct Datastore {
     pub drink_scores_per_user: HashMap<u32, ScoredIdTreeMock>,
     pub balance_cost_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
     pub balance_count_per_user: HashMap<(u32, String), HashMap<(u32, String), u32>>,
-    pub balance_special: HashMap<(u32, String), Vec<(String, i64)>>,
     pub used_up_freebies: Vec<Freeby>, //completely mixed
     pub open_freebies: HashMap<u32, Vec<Freeby>>, //per recipient
     pub open_ffa: Vec<Freeby>,
@@ -142,6 +144,12 @@ impl DatastoreQueries for Datastore {
             .map(|p: &Bill| p.clone())
             .collect();
         return v;
+    }
+
+    fn get_mut_purchase(&mut self, id: &u64) -> Option<&mut Purchase> {
+        let idx = self.purchases.binary_search_by(|p| p.get_unique_id().cmp(id));
+
+        return idx.map(move |id| self.purchases.get_mut(id).unwrap()).ok();
     }
 }
 
@@ -285,7 +293,6 @@ impl Default for Datastore {
             drink_scores_per_user: HashMap::new(),
             balance_cost_per_user: HashMap::new(),
             balance_count_per_user: HashMap::new(),
-            balance_special: HashMap::new(),
             used_up_freebies: Vec::new(),
             open_freebies: HashMap::new(),
             open_ffa: Vec::new(),
