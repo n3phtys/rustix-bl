@@ -181,7 +181,7 @@ impl Event for BLEvents {
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
                 store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty()
             },
-            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state == datastore::BillState::Created).is_some(),
+            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_created()).is_some(),
             &BLEvents::SetPriceForSpecial { unique_id, price } => store.get_purchase(unique_id).is_some(),
         };
     }

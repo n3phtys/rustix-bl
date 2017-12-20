@@ -408,6 +408,18 @@ pub enum BillState {
     ExportedAtLeastOnce,
 }
 
+impl BillState {
+    pub fn is_created(&self) -> bool {
+        match *self {
+            BillState::Created => return true,
+            _ => return false,
+        }
+    }
+    pub fn is_finalized(&self) -> bool {
+        return !self.is_created()
+    }
+}
+
 impl Default for BillState {
     fn default() -> Self {
         return BillState::Created;
