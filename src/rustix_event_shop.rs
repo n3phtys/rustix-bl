@@ -22,6 +22,7 @@ use serde_json::Error;
 use datastore;
 use datastore::*;
 use suffix_rs::*;
+use datastore::PurchaseFunctions;
 
 
 pub trait Event {
@@ -177,7 +178,9 @@ impl Event for BLEvents {
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => store.purchase_count >= unique_id,
-            &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => unimplemented!(),
+            &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
+                store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty()
+            },
             &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => unimplemented!(),
             &BLEvents::SetPriceForSpecial { unique_id, price } => unimplemented!(),
         };
@@ -519,7 +522,7 @@ impl Event for BLEvents {
                     unique_id: idx,
                     timestamp_epoch_millis: *timestamp,
                     special_name: special_name.to_string(),
-                    specialcost: 0,
+                    specialcost: None,
                     consumer_id: *user_id,
                 });
 

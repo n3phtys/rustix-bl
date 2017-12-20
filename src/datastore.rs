@@ -26,6 +26,17 @@ pub trait DatastoreQueries {
 
 
     fn get_mut_purchase(&mut self, id: &u64) -> Option<&mut Purchase>;
+    fn get_mut_bill(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<&mut Bill>;
+
+    fn get_specials_to_bill_mut(&mut self, timestamp_from: i64, timestamp_to: i64) -> Vec<&mut Purchase>;
+
+    fn get_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64>;
+
+    fn get_unpriced_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64>;
+
+    //can have external_id, not_billed flag set, or in ignore list. Will still be shown
+    fn get_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32>;
+    fn get_un_set_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32>;
 }
 
 
@@ -151,6 +162,37 @@ impl DatastoreQueries for Datastore {
 
         return idx.map(move |id| self.purchases.get_mut(id).unwrap()).ok();
     }
+
+    fn get_mut_bill(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<&mut Bill> {
+        return self.bills.iter_mut().find(|b| b.timestamp_from == timestamp_from && b.timestamp_to == timestamp_to);
+    }
+    fn get_specials_to_bill_mut(&mut self, timestamp_from: i64, timestamp_to: i64) -> Vec<&mut Purchase> {
+        unimplemented!()
+    }
+
+    fn get_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64> {
+        unimplemented!()
+    }
+
+    fn get_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32> {
+        unimplemented!()
+    }
+
+    fn get_un_set_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32> {
+        unimplemented!()
+    }
+    fn get_unpriced_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64>
+        {
+
+            let mut xs : Vec<u64> = Vec::new();
+            {
+                use datastore::PurchaseFunctions;
+
+                self.get_specials_to_bill(timestamp_from, timestamp_to).iter().map(|id| self.get_purchase(*id).unwrap()).filter(|p|p.get_special_set_price().is_none()).for_each(|p| xs.push(p.get_unique_id()));
+            }
+            return xs;
+        }
+
 }
 
 
@@ -438,6 +480,7 @@ pub trait PurchaseFunctions {
     fn get_user_id(&self) -> &u32;
     fn get_item_id(&self) -> &u32;
     fn get_timestamp(&self) -> &i64;
+    fn get_special_set_price(&self) -> Option<u32>;
 }
 
 
@@ -858,7 +901,7 @@ pub enum Purchase {
         unique_id: u64,
         timestamp_epoch_millis: i64,
         special_name: String,
-        specialcost: u32, //set to 0, set to correct value during bill finalization
+        specialcost: Option<u32>, //set to None, set to correct value during bill finalization
         consumer_id: u32,
     },
 }
@@ -896,6 +939,19 @@ impl PurchaseFunctions for Purchase {
             } => {
                 return *unique_id;
             },
+        }
+    }
+
+    fn get_special_set_price(&self) -> Option<u32> {
+        match self {
+            &Purchase::SpecialPurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref special_name,
+                ref specialcost,
+                ref consumer_id,
+            } => return *specialcost,
+            _ => panic!("get_special_set_price called on non-special purchase"),
         }
     }
 
