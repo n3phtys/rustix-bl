@@ -92,10 +92,18 @@ pub enum BLEvents {
     },
     UndoPurchase { unique_id: u64 },
     CreateBill {
-        timestamp: i64,
+        timestamp_from: i64,
+        timestamp_to: i64,
         user_ids: UserGroup,
         comment: String,
     },
+    FinalizeBill {
+
+    },
+    DeleteUnfinishedBill {
+        timestamp_from: i64, //timestamps uniquely identify a bill
+        timestamp_to: i64,
+    }
 }
 
 fn hashset(data: &[u32]) -> HashSet<u32> {
@@ -113,10 +121,14 @@ impl Event for BLEvents {
             } => true,
             &BLEvents::CreateUser { ref username } => true,
             &BLEvents::CreateBill {
-                timestamp,
+                ref timestamp_from,
+                ref timestamp_to,
                 ref user_ids,
                 ref comment,
-            } => !store.purchases.is_empty(),
+            } => {
+                !store.purchases.is_empty() &&
+                    !store.bills.iter().any(|b| b.timestamp_to == *timestamp_to && b.timestamp_from == *timestamp_from)
+            },
             &BLEvents::UpdateItem { ref item_id,
                 ref itemname,
                 ref price_cents,
@@ -279,10 +291,12 @@ impl Event for BLEvents {
                 true
             },
             &BLEvents::CreateBill {
-                timestamp,
+                ref timestamp_from,
+                ref timestamp_to,
                 ref user_ids,
                 ref comment,
             } => {
+                unimplemented!(); //TODO: has to be reprogrammed to only create the bill (finalization does everything else)
                 let user_ids_copy: datastore::UserGroup = user_ids.clone();
                 let user_ids_other_copy: datastore::UserGroup = user_ids.clone();
 
@@ -379,12 +393,17 @@ impl Event for BLEvents {
                 };
 
                 store.bills.push(datastore::Bill {
-                    timestamp: timestamp,
+                    timestamp_from: *timestamp_from,
+                    timestamp_to: *timestamp_to,
                     users: user_ids_other_copy,
-                    count_hash_map: counts,
-                    special_map: specials,
-                    sum_of_cost_hash_map: costs,
+                    bill_state: datastore::BillState::Created,
+                    users_that_will_not_be_billed: HashSet::new(),
                     comment: comment.to_string(),
+                    finalized_data: datastore::ExportableBillData {
+                        all_users: HashMap::new(),
+                        all_items: HashMap::new(),
+                        user_consumption: HashMap::new(),
+                    },
                 });
                 true
             }
