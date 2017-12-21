@@ -771,7 +771,23 @@ impl Event for BLEvents {
             //removes purchases from global list and also recomputes counts
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => unimplemented!(),
             &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => unimplemented!(),
-            &BLEvents::SetPriceForSpecial { unique_id, price } => unimplemented!(),
+            &BLEvents::SetPriceForSpecial { unique_id, price } => {
+                let x = store.get_purchase_mut(unique_id).unwrap();
+
+                match x {
+                    &mut Purchase::SpecialPurchase{
+                        ref unique_id,
+                        ref timestamp_epoch_millis,
+                        ref special_name,
+                        ref mut specialcost,
+                        ref consumer_id,
+                    } => {
+                        *specialcost = Some(price);
+                        return true;
+                    },
+                    _ => return false,
+                }
+            },
         };
     }
 }

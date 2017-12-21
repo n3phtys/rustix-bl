@@ -29,7 +29,6 @@ pub trait DatastoreQueries {
     fn get_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Option<&Bill>;
     fn get_mut_bill(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<&mut Bill>;
 
-    fn get_specials_to_bill_mut(&mut self, timestamp_from: i64, timestamp_to: i64) -> Vec<&mut Purchase>;
 
     fn get_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64>;
 
@@ -167,9 +166,6 @@ impl DatastoreQueries for Datastore {
     fn get_mut_bill(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<&mut Bill> {
         return self.bills.iter_mut().find(|b| b.timestamp_from == timestamp_from && b.timestamp_to == timestamp_to);
     }
-    fn get_specials_to_bill_mut(&mut self, timestamp_from: i64, timestamp_to: i64) -> Vec<&mut Purchase> {
-        unimplemented!()
-    }
 
     fn get_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64> {
         let (from, to) = find_purchase_indices(&self.purchases, timestamp_from, timestamp_to);
@@ -190,11 +186,43 @@ impl DatastoreQueries for Datastore {
     }
 
     fn get_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32> {
-        unimplemented!()
+        let bill_opt = self.bills.iter().find(|b|b.timestamp_to == timestamp_to && b.timestamp_from == timestamp_from);
+        if bill_opt.is_none() {
+            return Vec::new();
+        } else {
+            let bill = bill_opt.unwrap();
+
+            let mut xs : Vec<u32> = vec![];
+
+            let filtered = self.users.iter().filter(|kv| !kv.1.deleted && matches_usergroup(&Some(*kv.0), &bill.users));
+
+            for keyvalue in filtered {
+                xs.push(*keyvalue.0);
+            }
+
+                return xs;
+        }
     }
 
     fn get_un_set_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32> {
-        unimplemented!()
+        let bill_opt = self.bills.iter().find(|b|b.timestamp_to == timestamp_to && b.timestamp_from == timestamp_from);
+        if bill_opt.is_none() {
+            return Vec::new();
+        } else {
+            let bill = bill_opt.unwrap();
+
+            let mut xs : Vec<u32> = vec![];
+
+            let filtered = self.users.iter().filter(|kv| {
+                !kv.1.deleted && matches_usergroup(&Some(*kv.0), &bill.users) && kv.1.is_billed && kv.1.external_user_id.is_none() && !(bill.users_that_will_not_be_billed.contains(kv.0))
+            });
+
+            for keyvalue in filtered {
+                xs.push(*keyvalue.0);
+            }
+
+            return xs;
+        }
     }
     fn get_unpriced_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64>
         {
@@ -268,6 +296,7 @@ pub trait Userable {
 
 pub trait Purchaseable {
     fn get_purchase(&self, id: u64) -> Option<Purchase>;
+    fn get_purchase_mut(&mut self, id: u64) -> Option<&mut Purchase>;
 }
 
 impl Userable for Datastore {
@@ -305,6 +334,11 @@ impl Purchaseable for Datastore {
             }
         }
         return None;
+    }
+    fn get_purchase_mut(&mut self, id: u64) -> Option<&mut Purchase> {
+        return self.purchases.iter_mut().find(|p|{
+            p.has_unique_id(id)
+        });
     }
 }
 
