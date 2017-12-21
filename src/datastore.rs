@@ -172,7 +172,21 @@ impl DatastoreQueries for Datastore {
     }
 
     fn get_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64> {
-        unimplemented!()
+        let (from, to) = find_purchase_indices(&self.purchases, timestamp_from, timestamp_to);
+        let bill_opt = self.bills.iter().find(|b|b.timestamp_to == timestamp_to && b.timestamp_from == timestamp_from);
+        if bill_opt.is_none() {
+            return Vec::new();
+        } else {
+            let bill = bill_opt.unwrap();
+            return self.purchases[from..to].iter().filter(|p| {
+                p.has_user_id() && matches_usergroup(&Some(*p.get_user_id()), &bill.users) && (match **p {
+                    Purchase::SpecialPurchase {
+                        ..
+                    } => true,
+                    _ => false,
+                })
+            }).map(|p|p.get_unique_id()).collect();
+        }
     }
 
     fn get_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32> {
@@ -493,6 +507,7 @@ pub trait PurchaseFunctions {
     fn get_unique_id(&self) -> u64;
     fn has_unique_id(&self, other: u64) -> bool;
     fn get_user_id(&self) -> &u32;
+    fn has_user_id(&self) -> bool;
     fn get_item_id(&self) -> &u32;
     fn get_timestamp(&self) -> &i64;
     fn get_special_set_price(&self) -> Option<u32>;
@@ -1000,6 +1015,40 @@ impl PurchaseFunctions for Purchase {
                 ref donor,
             } => {
                 return *unique_id == other;
+            }
+        }
+    }
+
+    fn has_user_id(&self) -> bool {
+        match self {
+            &Purchase::UndoPurchase { ref unique_id } => {
+                return false;
+            },
+            &Purchase::SpecialPurchase{
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref special_name,
+                ref specialcost,
+                ref consumer_id,
+            } => {
+                return true;
+            },
+            &Purchase::SimplePurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref consumer_id,
+            } => {
+                return true;
+            },
+            &Purchase::FFAPurchase {
+                ref unique_id,
+                ref timestamp_epoch_millis,
+                ref item_id,
+                ref freeby_id,
+                ref donor,
+            } => {
+                return true;
             }
         }
     }
