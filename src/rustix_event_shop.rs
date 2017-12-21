@@ -770,7 +770,18 @@ impl Event for BLEvents {
             },
             //removes purchases from global list and also recomputes counts
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => unimplemented!(),
-            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => unimplemented!(),
+            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => {
+                let idx_opt : Option<usize> = store.bills.iter().position(|b|b.timestamp_to == timestamp_to && b.timestamp_from == timestamp_from);
+                match idx_opt {
+                    Some(idx) => {
+                        let _ = store.bills.remove(idx);
+                        return true;
+                    }
+                    None => {
+                        return false;
+                    },
+                }
+            },
             &BLEvents::SetPriceForSpecial { unique_id, price } => {
                 let x = store.get_purchase_mut(unique_id).unwrap();
 
