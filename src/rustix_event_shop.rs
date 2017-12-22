@@ -101,7 +101,10 @@ pub enum BLEvents {
     FinalizeBill {
         timestamp_from: i64, //timestamps uniquely identify a bill
         timestamp_to: i64,
-
+    },
+    ExportBill {
+        timestamp_from: i64, //timestamps uniquely identify a bill
+        timestamp_to: i64,
     },
     DeleteUnfinishedBill {
         timestamp_from: i64, //timestamps uniquely identify a bill
@@ -179,6 +182,9 @@ impl Event for BLEvents {
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => store.purchase_count >= unique_id,
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
+                store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_finalized()).is_some()
+            },
+                &BLEvents::ExportBill {  timestamp_from, timestamp_to } => {
                 store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty()
             },
             &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_created()).is_some(),
@@ -723,8 +729,55 @@ impl Event for BLEvents {
 
                 true
             },
-            &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
-            &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
+            &BLEvents::ExportBill {  timestamp_from, timestamp_to } => {
+                let b: &mut Bill = store.get_mut_bill(timestamp_from, timestamp_to).unwrap();
+                b.bill_state = datastore::BillState::ExportedAtLeastOnce;
+                true
+            },
+            &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => {
+                let id = {
+                    let x = store.freeby_id_counter + 1;
+                    store.freeby_id_counter = x;
+                    x
+                };
+                if !store.open_freebies.contains_key(recipient) {
+                    store.open_freebies.insert(*recipient, vec![]);
+                }
+                store.open_freebies.get_mut(recipient).unwrap().push( datastore::Freeby::Classic {
+                    id: id,
+                    allowed_categories: allowed_categories.to_vec(),
+                    allowed_drinks: allowed_drinks.to_vec(),
+                    allowed_number_total: *allowed_number_total,
+                    allowed_number_used: 0,
+                    text_message: text_message.to_string(),
+                    created_timestamp: *created_timestamp,
+                    donor: *donor,
+                    recipient: *recipient,
+                });
+
+                true
+            },
+            &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => {
+                let id = {
+                    let x = store.freeby_id_counter + 1;
+                    store.freeby_id_counter = x;
+                    x
+                };
+                if !store.open_freebies.contains_key(recipient) {
+                    store.open_freebies.insert(*recipient, vec![]);
+                }
+                store.open_freebies.get_mut(recipient).unwrap().push( datastore::Freeby::Transfer {
+                    id: id,
+                    cents_worth_total: *cents_worth_total,
+                    cents_worth_used: 0,
+                    text_message: text_message.to_string(),
+                    created_timestamp: *created_timestamp,
+                    donor: *donor,
+                    recipient: *recipient,
+                });
+
+                true
+            },
             &BLEvents::UndoPurchase { unique_id } => {
                 //remove purchase from list
                 let index = store
@@ -769,7 +822,21 @@ impl Event for BLEvents {
                 old_size == index + 1
             },
             //removes purchases from global list and also recomputes counts
-            &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => unimplemented!(),
+            &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
+                unimplemented!()
+
+                //TODO: compute users and create copies
+                //TODO: iter() over all purchases in given time, add to maps via mapping function; original purchases are deleted from purchases vec
+                //TODO: for every purchase, look at user's open freebies first, and potentially consume one, in which case the purchase will be added to the donor instead
+                //TODO: when total > budget > 0, add budget as negative to recipient and as positive to donor, with exact names
+                //TODO: if freeby is empty, move to 'old' (keep 'old' ordered by timestamp for binary search)
+                //TODO: whenever a new item is found in purchases, add a copy to bill's hashmap of items
+                //TODO: add priced specials per day per user
+                //TODO: balance_cost_per_user also has to be reduced for each purchase
+
+
+                //TODO: how will purchase rank be recomputed? Currently kept
+            },
             &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => {
                 let idx_opt : Option<usize> = store.bills.iter().position(|b|b.timestamp_to == timestamp_to && b.timestamp_from == timestamp_from);
                 match idx_opt {
