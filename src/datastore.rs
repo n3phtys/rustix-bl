@@ -586,8 +586,8 @@ pub struct PricedSpecial {
 pub struct PaidFor {
     pub recipient_id: u32,
     pub count_giveouts_used: HashMap<u32,u32>,
-    pub budget_given: u32,
-    pub budget_gotten: u32,
+    pub budget_given: u64,
+    pub budget_gotten: u64,
 }
 
 
@@ -995,6 +995,41 @@ impl FreebyAble for Freeby {
             },
         };
     }
+    fn get_budget_cents_left(&self) -> u64 {
+        return match *self {
+            Freeby::Transfer{
+                ref id,
+                ref cents_worth_total,
+                ref cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                (*cents_worth_total - *cents_worth_used)
+            },
+            _ => panic!("Cannot get cents left for non-budget-freeby"),
+        }
+    }
+
+    fn remove_budget_by(&mut self, value: u64) {
+        match *self {
+            Freeby::Transfer{
+                ref id,
+                ref cents_worth_total,
+                ref mut cents_worth_used,
+                ref text_message,
+                ref created_timestamp,
+                ref donor,
+                ref recipient
+            } => {
+                *cents_worth_used += value;
+            },
+            _ => {
+                panic!("Cannot set cents left for non-budget-freeby");
+            },
+        }
+    }
 }
 
 
@@ -1008,6 +1043,8 @@ pub trait FreebyAble {
         return FreebyAble::left(self) != 0;
     }
     fn decrement(&mut self) -> ();
+    fn get_budget_cents_left(&self) -> u64;
+    fn remove_budget_by(&mut self, value: u64);
     fn left(&self) -> u16;
     fn allows(&self, item_to_allow : &Item) -> bool {
         for id in self.allowed_items() {

@@ -8,6 +8,7 @@ use datastore::UserGroup;
 use datastore::Itemable;
 use datastore::Userable;
 
+use std::cmp;
 use config::StaticConfig;
 
 use left_threaded_avl_tree::AVLTree;
@@ -824,13 +825,19 @@ impl Event for BLEvents {
             //removes purchases from global list and also recomputes counts
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
 
+
                 let bill_idx: usize = store.get_bill_index(timestamp_from, timestamp_to).unwrap();
+
+                {
+                    store.bills.get_mut(bill_idx).unwrap().bill_state = BillState::Finalized;
+                }
 
                 let bill_cpy: Bill = store.bills[bill_idx].clone();
 
+
                 let purchase_indices = store.get_purchase_indices_to_bill(&bill_cpy);
 
-                //TODO: compute users and create copies
+                //compute users and create copies
                 {
                     let filtered_purs : Vec<Purchase> = purchase_indices.iter().map(|idx| store.purchases[*idx].clone()).collect();
                     for purchase in filtered_purs {
@@ -897,27 +904,151 @@ impl Event for BLEvents {
                                 //first, get a count giveout
                                 match count_freeby_idx {
                                     Some(cidx) => {
-                                        //TODO: if count giveout was found, add purchase under donor as a PaidFor
-                                        unimplemented!();
+                                        //if count giveout was found, add purchase under donor as a PaidFor
+                                        let old_count: u16 = store.open_freebies.get(&consumer_id).unwrap().get(cidx).unwrap().left();
+                                        let donor_id: u32 = store.open_freebies.get(&consumer_id).unwrap().get(cidx).unwrap().get_donor();
+                                        let donor: User = store.users.get(&donor_id).unwrap().clone();
 
-                                        //TODO: removed used up freeby
-                                        unimplemented!();
+
+                                        {
+                                            if !bill.finalized_data.all_users.contains_key(&donor_id) {
+                                                bill.finalized_data.all_users.insert(donor_id, donor.clone());
+                                                bill.finalized_data.user_consumption.insert(donor_id, BillUserInstance {
+                                                    user_id: donor_id,
+                                                    per_day: HashMap::new(),
+                                                });
+                                            }
+
+                                            if !bill.finalized_data.user_consumption.get_mut(&donor_id).unwrap().per_day.contains_key(&day_idx) {
+                                                bill.finalized_data.user_consumption.get_mut(&donor_id).unwrap().per_day.insert(day_idx, BillUserDayInstance {
+                                                    personally_consumed: HashMap::new(),
+                                                    specials_consumed: Vec::new(),
+                                                    ffa_giveouts: HashMap::new(),
+                                                    giveouts_to_user_id: HashMap::new(),
+                                                });
+                                            }
+
+                                            *bill.finalized_data.user_consumption.get_mut(&donor_id).unwrap().per_day.get_mut(&day_idx).unwrap().giveouts_to_user_id.entry(consumer_id).or_insert(PaidFor {
+                                                recipient_id: consumer_id,
+                                                count_giveouts_used: HashMap::new(),
+                                                budget_given: 0,
+                                                budget_gotten: 0,
+                                            }).count_giveouts_used.entry(item_id).or_insert(0) += 1;
+
+
+                                        }
+
+                                        {
+                                            store.open_freebies.get_mut(&consumer_id).unwrap().get_mut(cidx).unwrap().decrement();
+                                        }
+
+                                        //removed used up freeby
+                                        if old_count <= 1 {
+                                            let freeby = store.open_freebies.get_mut(&consumer_id).unwrap().remove(cidx);
+                                            store.used_up_freebies.push(freeby);
+                                        }
                                     },
                                     None => {
-                                        //TODO: add purchase under consumer
-                                        unimplemented!();
+                                        //add purchase under consumer
+                                        *bill.finalized_data.user_consumption.get_mut(&consumer_id).unwrap().per_day.entry(day_idx).or_insert(BillUserDayInstance {
+                                            personally_consumed: HashMap::new(),
+                                            specials_consumed: Vec::new(),
+                                            ffa_giveouts: HashMap::new(),
+                                            giveouts_to_user_id: HashMap::new(),
+                                        }).personally_consumed.entry(item_id).or_insert(0u32) += 1;
 
                                         //if a count giveout does not exist, find a budget giveout, and add decrease / increase if possible
                                         match budget_freeby_idx {
                                             Some(bidx) => {
-                                                //TODO: add budget (min(freeby.left, max(0, item.cost))) positive to recipient
-                                                unimplemented!();
+                                                let max_budget : u64 = store.open_freebies.get(&consumer_id).unwrap().get(bidx).unwrap().get_budget_cents_left();
+                                                let donor_id: u32 = store.open_freebies.get(&consumer_id).unwrap().get(bidx).unwrap().get_donor();
+                                                let donor: User = store.users.get(&donor_id).unwrap().clone();
+                                                let item_cost : u64 = item.cost_cents as u64;
+                                                let taken_budget : u64 = cmp::min(max_budget, cmp::max(0u64, item_cost));
+                                                let used_up : bool = max_budget <= item_cost;
 
-                                                //TODO: add budget negative to donor
-                                                unimplemented!();
 
-                                                //TODO: removed used up freeby
-                                                unimplemented!();
+
+                                                //remove budget in freeby
+                                                {
+                                                    store.open_freebies.get_mut(&consumer_id).unwrap().get_mut(bidx).unwrap().remove_budget_by(taken_budget);
+                                                }
+
+                                                {
+                                                    //add budget (min(freeby.left, max(0, item.cost))) positive to recipient
+                                                    if !bill.finalized_data.user_consumption.contains_key(&consumer_id) {
+                                                        bill.finalized_data.user_consumption.insert(consumer_id, BillUserInstance {
+                                                            user_id: consumer_id,
+                                                            per_day: HashMap::new(),
+                                                        });
+                                                    }
+                                                    if !bill.finalized_data.user_consumption.get(&consumer_id).unwrap().per_day.contains_key(&day_idx) {
+                                                        bill.finalized_data.user_consumption.get_mut(&consumer_id).unwrap().per_day.insert(day_idx, BillUserDayInstance {
+                                                            personally_consumed: HashMap::new(),
+                                                            specials_consumed: Vec::new(),
+                                                            ffa_giveouts: HashMap::new(),
+                                                            giveouts_to_user_id: HashMap::new(),
+                                                    });
+                                                }
+
+                                                if !bill.finalized_data.user_consumption.get(&consumer_id).unwrap().per_day.get(&day_idx).unwrap().giveouts_to_user_id.contains_key(&donor_id) {
+                                                    bill.finalized_data.user_consumption.get_mut(&consumer_id).unwrap().per_day.get_mut(&day_idx).unwrap().giveouts_to_user_id.insert(donor_id, PaidFor {
+                                                        recipient_id: donor_id,
+                                                        count_giveouts_used: HashMap::new(),
+                                                        budget_given: 0,
+                                                        budget_gotten: 0,
+                                                    });
+                                                }
+
+                                                bill.finalized_data.user_consumption.get_mut(&consumer_id).unwrap().per_day.get_mut(&day_idx).unwrap().giveouts_to_user_id.entry(donor_id).or_insert(PaidFor {
+                                                    recipient_id: donor_id,
+                                                    count_giveouts_used: HashMap::new(),
+                                                    budget_given: 0,
+                                                    budget_gotten: 0,
+                                                }).budget_gotten += taken_budget;
+
+                                                }
+
+                                                {
+                                                    //add budget negative to donor
+                                                    //add donor if he does not yet exist
+                                                    if !bill.finalized_data.user_consumption.contains_key(&donor_id) {
+                                                        bill.finalized_data.user_consumption.insert(donor_id, BillUserInstance {
+                                                            user_id: donor_id,
+                                                            per_day: HashMap::new(),
+                                                        });
+                                                    }
+                                                    if !bill.finalized_data.user_consumption.get(&donor_id).unwrap().per_day.contains_key(&day_idx) {
+                                                        bill.finalized_data.user_consumption.get_mut(&donor_id).unwrap().per_day.insert(day_idx, BillUserDayInstance {
+                                                            personally_consumed: HashMap::new(),
+                                                            specials_consumed: Vec::new(),
+                                                            ffa_giveouts: HashMap::new(),
+                                                            giveouts_to_user_id: HashMap::new(),
+                                                        });
+                                                    }
+
+                                                    if !bill.finalized_data.user_consumption.get(&donor_id).unwrap().per_day.get(&day_idx).unwrap().giveouts_to_user_id.contains_key(&consumer_id) {
+                                                        bill.finalized_data.user_consumption.get_mut(&donor_id).unwrap().per_day.get_mut(&day_idx).unwrap().giveouts_to_user_id.insert(consumer_id, PaidFor {
+                                                            recipient_id: consumer_id,
+                                                            count_giveouts_used: HashMap::new(),
+                                                            budget_given: 0,
+                                                            budget_gotten: 0,
+                                                        });
+                                                    }
+
+                                                bill.finalized_data.user_consumption.get_mut(&donor_id).unwrap().per_day.get_mut(&day_idx).unwrap().giveouts_to_user_id.entry(consumer_id).or_insert(PaidFor {
+                                                    recipient_id: consumer_id,
+                                                    count_giveouts_used: HashMap::new(),
+                                                    budget_given: 0,
+                                                    budget_gotten: 0,
+                                                }).budget_given += taken_budget;
+                                                }
+
+                                                //removed used up freeby
+                                                if used_up {
+                                                    let freeby = store.open_freebies.get_mut(&consumer_id).unwrap().remove(bidx);
+                                                    store.used_up_freebies.push(freeby);
+                                                }
                                             },
                                             None => (),
                                         }
@@ -947,8 +1078,6 @@ impl Event for BLEvents {
                                 if !bill.finalized_data.all_items.contains_key(&item_id) {
                                     bill.finalized_data.all_items.insert(item_id, item.clone());
                                 }
-
-
 
 
                                 if !bill.finalized_data.user_consumption[&donor].per_day.contains_key(&day_idx) {

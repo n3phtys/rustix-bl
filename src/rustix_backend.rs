@@ -606,6 +606,16 @@ mod tests {
         //create a bill
         backend.create_bill(0, 100, AllUsers, "remark of bill".to_string());
 
+
+        assert_eq!(
+            backend.datastore.bills[0].bill_state.is_finalized(),
+            false
+        );
+        assert_eq!(
+            backend.datastore.purchases.len(),
+            3
+        );
+
         backend.update_user(0, "user a".to_string(), true, false, Some("user_id_external_a".to_string()));
         backend.update_user(1, "user b".to_string(), false, false, None);
 
@@ -615,6 +625,10 @@ mod tests {
         assert_eq!(
             backend.datastore.bills[0].bill_state.is_finalized(),
             true
+        );
+        assert_eq!(
+            backend.datastore.purchases.len(),
+            0
         );
         assert_eq!(
             backend.datastore.bills[0].finalized_data.all_items.len(),
