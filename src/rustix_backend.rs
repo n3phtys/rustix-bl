@@ -609,20 +609,52 @@ mod tests {
         backend.update_user(0, "user a".to_string(), true, false, Some("user_id_external_a".to_string()));
         backend.update_user(1, "user b".to_string(), false, false, None);
 
-        backend.apply(&BLEvents::FinalizeBill{timestamp_from: 0, timestamp_to: 100} );
+        assert_eq!(backend.apply(&BLEvents::FinalizeBill{timestamp_from: 0, timestamp_to: 100}) , true);
+
+
+        assert_eq!(
+            backend.datastore.bills[0].bill_state.is_finalized(),
+            true
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.all_items.len(),
+            2
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.all_users.len(),
+            1
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().personally_consumed.len(),
+            2
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().ffa_giveouts.len(),
+            0
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.len(),
+            0
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().specials_consumed.len(),
+            0
+        );
+
+
 
         //control that current balance is down to zero for all users
-
-        assert_eq!(
-            backend.datastore.balance_cost_per_user.get(&user_key).is_none(),
-            true
-        );
-
-
-        assert_eq!(
-            backend.datastore.balance_cost_per_user.get(&user_1_key).is_none(),
-            true
-        );
+//
+//        assert_eq!(
+//            backend.datastore.balance_cost_per_user.get(&user_key).is_none(),
+//            true
+//        );
+//
+//
+//        assert_eq!(
+//            backend.datastore.balance_cost_per_user.get(&user_1_key).is_none(),
+//            true
+//        );
 
 
         //control that bill contains correct data

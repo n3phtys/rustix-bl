@@ -182,7 +182,7 @@ impl Event for BLEvents {
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => store.get_purchase(unique_id).is_some(),
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
-                store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_finalized()).is_some()
+                store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_created()).is_some()
             },
                 &BLEvents::ExportBill {  timestamp_from, timestamp_to } => {
                 store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty()
@@ -875,23 +875,54 @@ impl Event for BLEvents {
                                 item_id,
                                 consumer_id,
                             } => {
-
-                                //TODO: do not forget to use count and budget giveouts here, if they exist
-
-                                //TODO: first, get a count giveout
-
-                                //TODO: if count giveout was found, add purchase under donor as a PaidFor
-
-                                //TODO: if a count giveout does not exist, find a budget giveout, and add decrease / increase if possible
-
-                                //TODO: if no count giveout was found, make a normal purchase addition to the consumer
+                                let day_idx : usize = bill_cpy.get_day_index(timestamp_epoch_millis);
+                                let item: Item = store.items.get(&item_id).unwrap().clone();
+                                let count_freeby_idx = store.get_count_freeby_id_useable_for(consumer_id, item_id);
+                                let budget_freeby_idx = store.get_budget_freeby_id_useable_for(consumer_id);
 
 
-                                //TODO: removed used up freebies
+                                let mut bill: &mut Bill = store.bills.get_mut(bill_idx).unwrap();
+                                if !bill.finalized_data.all_users.contains_key(&consumer_id) {
+                                    bill.finalized_data.all_users.insert(consumer_id, user.clone());
+                                    bill.finalized_data.user_consumption.insert(consumer_id, BillUserInstance {
+                                        user_id: consumer_id,
+                                        per_day: HashMap::new(),
+                                    });
+                                }
 
-                                unimplemented!()
+                                if !bill.finalized_data.all_items.contains_key(&item_id) {
+                                    bill.finalized_data.all_items.insert(item_id, item.clone());
+                                }
 
+                                //first, get a count giveout
+                                match count_freeby_idx {
+                                    Some(cidx) => {
+                                        //TODO: if count giveout was found, add purchase under donor as a PaidFor
+                                        unimplemented!();
 
+                                        //TODO: removed used up freeby
+                                        unimplemented!();
+                                    },
+                                    None => {
+                                        //TODO: add purchase under consumer
+                                        unimplemented!();
+
+                                        //if a count giveout does not exist, find a budget giveout, and add decrease / increase if possible
+                                        match budget_freeby_idx {
+                                            Some(bidx) => {
+                                                //TODO: add budget (min(freeby.left, max(0, item.cost))) positive to recipient
+                                                unimplemented!();
+
+                                                //TODO: add budget negative to donor
+                                                unimplemented!();
+
+                                                //TODO: removed used up freeby
+                                                unimplemented!();
+                                            },
+                                            None => (),
+                                        }
+                                    },
+                                }
                             },
                             Purchase::FFAPurchase {
                                 unique_id,

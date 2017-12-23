@@ -586,7 +586,8 @@ pub struct PricedSpecial {
 pub struct PaidFor {
     pub recipient_id: u32,
     pub count_giveouts_used: HashMap<u32,u32>,
-    pub budget_used: u32,
+    pub budget_given: u32,
+    pub budget_gotten: u32,
 }
 
 
