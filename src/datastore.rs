@@ -297,10 +297,15 @@ impl DatastoreQueries for Datastore {
                     if allowed_drinks.contains(&item) {
                         return Some(idx);
                     } else {
-                        if cat.filter(|c|allowed_categories.contains(c)).is_some() {
-                            return Some(idx);
-                        } else {
-                            ()
+                        match cat {
+                            Some(c) => {
+                                if allowed_categories.contains(&c) {
+                                    return Some(idx);
+                                } else {
+                                    ()
+                                }
+                            },
+                            None => (),
                         }
                     }
                 },

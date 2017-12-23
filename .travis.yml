@@ -5,6 +5,7 @@ matrix:
     fast_finish: true
     include:
         - rust: nightly
+        - rust: stable
 
 cache:
     apt: true

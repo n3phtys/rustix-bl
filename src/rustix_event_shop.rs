@@ -173,7 +173,10 @@ impl Event for BLEvents {
                 let mut b = false;
                 let x : Option<&Freeby> = store.open_ffa.iter().find(|x|x.get_id() == ffa_id);
                 let item: &Item = store.items.get(&item_id).unwrap();
-                x.filter(|ffa|ffa.allows(item)).is_some()
+                match x {
+                    Some(ffa) => {return ffa.allows(item);},
+                    None => {return false;},
+                }
             },
             &BLEvents::CreateFreeForAll { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor  } =>
                 {
@@ -183,12 +186,23 @@ impl Event for BLEvents {
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::UndoPurchase { unique_id } => store.get_purchase(unique_id).is_some(),
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
-                store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_created()).is_some()
+
+                match store.get_bill(timestamp_from, timestamp_to) {
+                    Some(b) => {return b.bill_state.is_created();},
+                    None => {return false;},
+                }
             },
                 &BLEvents::ExportBill {  timestamp_from, timestamp_to } => {
                 store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty()
             },
-            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_created()).is_some(),
+            &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => {
+                match store.get_bill(timestamp_from, timestamp_to) {
+                    Some(b) => {
+                        return b.bill_state.is_created();
+                    },
+                    None => {return false;},
+                }
+            },
             &BLEvents::SetPriceForSpecial { unique_id, price } => store.get_purchase(unique_id).is_some(),
         };
     }
@@ -382,8 +396,13 @@ impl Event for BLEvents {
 
 
                 //if highlight_in_ui, update store.highlighted_users
-                if store.users.get(&user_id).filter(|x|x.highlight_in_ui).is_some() {
-                    let _ = store.highlighted_users.remove(&user_id);
+                match store.users.get(&user_id) {
+                    Some(x) => {
+                        if x.highlight_in_ui {
+                            let _ = store.highlighted_users.remove(&user_id);
+                        }
+                    },
+                    None => (),
                 }
 
                 //remove from user hashmap
