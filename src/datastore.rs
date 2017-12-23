@@ -37,6 +37,8 @@ pub trait DatastoreQueries {
     //can have external_id, not_billed flag set, or in ignore list. Will still be shown
     fn get_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32>;
     fn get_un_set_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32>;
+    fn get_bill_index(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<usize>;
+    fn get_purchase_indices_to_bill(&self, bill: &Bill) -> Vec<usize>;
 }
 
 
@@ -167,6 +169,10 @@ impl DatastoreQueries for Datastore {
         return self.bills.iter_mut().find(|b| b.timestamp_from == timestamp_from && b.timestamp_to == timestamp_to);
     }
 
+    fn get_bill_index(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<usize> {
+        return self.bills.iter().position(|b| b.timestamp_from == timestamp_from && b.timestamp_to == timestamp_to);
+    }
+
     fn get_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64> {
         let (from, to) = find_purchase_indices(&self.purchases, timestamp_from, timestamp_to);
         let bill_opt = self.bills.iter().find(|b|b.timestamp_to == timestamp_to && b.timestamp_from == timestamp_from);
@@ -237,6 +243,21 @@ impl DatastoreQueries for Datastore {
         }
     fn get_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Option<&Bill> {
         return self.bills.iter().find(|b| b.timestamp_from == timestamp_from && b.timestamp_to == timestamp_to);
+    }
+
+
+    fn get_purchase_indices_to_bill(&self, bill: &Bill) -> Vec<usize> {
+        //from all purchases, get indices inside bill date
+        //filter by donor / consumer being inside bill
+        let (from, to) = find_purchase_indices(&self.purchases, bill.timestamp_from, bill.timestamp_to);
+
+        let mut v: Vec<usize> = vec![];
+        for i in from..to {
+            if matches_usergroup(&Some(*self.purchases[i].get_user_id()), &bill.users)  {
+                v.push(i);
+            }
+        }
+        return v;
     }
 }
 
@@ -481,13 +502,13 @@ impl Default for BillState {
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct BillUserInstance {
     pub user_id: u32,
-    pub per_day: Vec<BillUserDayInstance>,
+    pub per_day: HashMap<usize, BillUserDayInstance>,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct BillUserDayInstance {
-    pub begin_inclusive: i64,
-    pub end_exclusive: i64,
+    //pub begin_inclusive: i64,
+    //pub end_exclusive: i64,
 
     pub personally_consumed: HashMap<u32, u32>,
     pub specials_consumed: Vec<PricedSpecial>,
@@ -534,6 +555,17 @@ pub struct Bill {
     //set at finalization
     pub finalized_data : ExportableBillData,
 
+}
+
+impl Bill {
+    pub fn get_day_index(&self, time: i64) -> usize {
+        //TODO: deal with real date mechanics here to get correct day at 00:00.000 for every day
+        let day_length: i64 = 1000i64 * 3600i64 * 24i64;
+        let div: i64 = self.timestamp_from / day_length;
+        let first_day_begin: i64 = div * day_length;
+        let day = (time - first_day_begin) / day_length;
+        return day as usize;
+    }
 }
 
 
@@ -954,7 +986,7 @@ pub enum Purchase {
         freeby_id: u64,
         donor: u32,
     },
-    UndoPurchase { unique_id: u64 },
+    //UndoPurchase { unique_id: u64 }, //deletes instance directly from purchases
     SimplePurchase {
         unique_id: u64,
         timestamp_epoch_millis: i64,
@@ -974,9 +1006,6 @@ pub enum Purchase {
 impl PurchaseFunctions for Purchase {
     fn get_unique_id(&self) -> u64 {
         match self {
-            &Purchase::UndoPurchase { ref unique_id } => {
-                return *unique_id;
-            },
             &Purchase::SpecialPurchase{
                 ref unique_id,
                 ref timestamp_epoch_millis,
@@ -1021,9 +1050,6 @@ impl PurchaseFunctions for Purchase {
 
     fn has_unique_id(&self, other: u64) -> bool {
         match self {
-            &Purchase::UndoPurchase { ref unique_id } => {
-                return *unique_id == other;
-            },
             &Purchase::SpecialPurchase{
                 ref unique_id,
                 ref timestamp_epoch_millis,
@@ -1055,9 +1081,6 @@ impl PurchaseFunctions for Purchase {
 
     fn has_user_id(&self) -> bool {
         match self {
-            &Purchase::UndoPurchase { ref unique_id } => {
-                return false;
-            },
             &Purchase::SpecialPurchase{
                 ref unique_id,
                 ref timestamp_epoch_millis,
@@ -1088,9 +1111,6 @@ impl PurchaseFunctions for Purchase {
     }
     fn get_user_id(&self) -> &u32 {
         match self {
-            &Purchase::UndoPurchase { ref unique_id } => {
-                unimplemented!();
-            },
             &Purchase::SpecialPurchase{
                 ref unique_id,
                 ref timestamp_epoch_millis,
@@ -1122,7 +1142,6 @@ impl PurchaseFunctions for Purchase {
 
     fn get_item_id(&self) -> &u32 {
         match self {
-            &Purchase::UndoPurchase { ref unique_id } => unimplemented!(),
             &Purchase::SpecialPurchase{
                 ref unique_id,
                 ref timestamp_epoch_millis,
@@ -1154,7 +1173,6 @@ impl PurchaseFunctions for Purchase {
 
     fn get_timestamp(&self) -> &i64 {
         match self {
-            &Purchase::UndoPurchase { ref unique_id } => unimplemented!(),
             &Purchase::SpecialPurchase{
                 ref unique_id,
                 ref timestamp_epoch_millis,

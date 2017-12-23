@@ -180,7 +180,7 @@ impl Event for BLEvents {
                 },
             &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
             &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
-            &BLEvents::UndoPurchase { unique_id } => store.purchase_count >= unique_id,
+            &BLEvents::UndoPurchase { unique_id } => store.get_purchase(unique_id).is_some(),
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
                 store.get_bill(timestamp_from, timestamp_to).filter(|b|b.bill_state.is_finalized()).is_some()
             },
@@ -823,9 +823,96 @@ impl Event for BLEvents {
             },
             //removes purchases from global list and also recomputes counts
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
-                unimplemented!()
+
+                let bill_idx: usize = store.get_bill_index(timestamp_from, timestamp_to).unwrap();
+
+                let bill_cpy: Bill = store.bills[bill_idx].clone();
+
+                let purchase_indices = store.get_purchase_indices_to_bill(&bill_cpy);
 
                 //TODO: compute users and create copies
+                {
+                    let filtered_purs : Vec<Purchase> = purchase_indices.iter().map(|idx| store.purchases[*idx].clone()).collect();
+                    for purchase in filtered_purs {
+
+                        let user : User = store.users[purchase.get_user_id()].clone();
+
+                        match purchase {
+                            Purchase::SpecialPurchase{
+                                unique_id,
+                                timestamp_epoch_millis,
+                                special_name,
+                                specialcost,
+                                consumer_id,
+                            } => {
+                                let day_idx : usize = bill_cpy.get_day_index(timestamp_epoch_millis);
+                                let mut bill: &mut Bill = store.bills.get_mut(bill_idx).unwrap();
+                                if !bill.finalized_data.all_users.contains_key(&consumer_id) {
+                                    bill.finalized_data.all_users.insert(consumer_id, user.clone());
+                                    bill.finalized_data.user_consumption.insert(consumer_id, BillUserInstance {
+                                        user_id: consumer_id,
+                                        per_day: HashMap::new(),
+                                    });
+                                }
+
+                                if !bill.finalized_data.user_consumption.get_mut(&consumer_id).unwrap().per_day.contains_key(&day_idx) {
+                                    bill.finalized_data.user_consumption.get_mut(&consumer_id).unwrap().per_day.insert(day_idx, BillUserDayInstance {
+                                        personally_consumed: HashMap::new(),
+                                        specials_consumed: Vec::new(),
+                                        ffa_giveouts: HashMap::new(),
+                                        giveouts_to_user_id: HashMap::new(),
+                                    });
+                                }
+                                bill.finalized_data.user_consumption.get_mut(&consumer_id).unwrap().per_day.get_mut(&day_idx).unwrap().specials_consumed.push(PricedSpecial {
+                                    purchase_id: unique_id,
+                                    price: specialcost.unwrap(),
+                                    name: special_name.to_string(),
+                                });
+                            },
+                            Purchase::SimplePurchase  {
+                                unique_id,
+                                timestamp_epoch_millis,
+                                item_id,
+                                consumer_id,
+                            } => {
+
+                                //TODO: do not forget to use count and budget giveouts here, if they exist
+                                unimplemented!()
+                            },
+                            Purchase::FFAPurchase {
+                                unique_id,
+                                timestamp_epoch_millis,
+                                item_id,
+                                freeby_id,
+                                donor,
+                            } => {
+                                let day_idx : usize = bill_cpy.get_day_index(timestamp_epoch_millis);
+                                let mut bill: &mut Bill = store.bills.get_mut(bill_idx).unwrap();
+                                if !bill.finalized_data.all_users.contains_key(&donor) {
+                                    bill.finalized_data.all_users.insert(donor, user.clone());
+                                    bill.finalized_data.user_consumption.insert(donor, BillUserInstance {
+                                        user_id: donor,
+                                        per_day: HashMap::new(),
+                                    });
+                                }
+
+                                if !bill.finalized_data.user_consumption[&donor].per_day.contains_key(&day_idx) {
+                                    bill.finalized_data.user_consumption.get_mut(&donor).unwrap().per_day.insert(day_idx, BillUserDayInstance {
+                                        personally_consumed: HashMap::new(),
+                                        specials_consumed: Vec::new(),
+                                        ffa_giveouts: HashMap::new(),
+                                        giveouts_to_user_id: HashMap::new(),
+                                    });
+                                }
+
+                                *bill.finalized_data.user_consumption.get_mut(&donor).unwrap().per_day.get_mut(&day_idx).unwrap().ffa_giveouts.entry(item_id).or_insert(0u32) += 1;
+                            },
+                        }
+
+                }
+                }
+
+
                 //TODO: iter() over all purchases in given time, add to maps via mapping function; original purchases are deleted from purchases vec
                 //TODO: for every purchase, look at user's open freebies first, and potentially consume one, in which case the purchase will be added to the donor instead
                 //TODO: when total > budget > 0, add budget as negative to recipient and as positive to donor, with exact names
@@ -834,8 +921,10 @@ impl Event for BLEvents {
                 //TODO: add priced specials per day per user
                 //TODO: balance_cost_per_user also has to be reduced for each purchase
 
+                //TODO: remove purchases from purchases vec
+                unimplemented!()
 
-                //TODO: how will purchase rank be recomputed? Currently kept
+                //TODO: Open question: how will purchase rank be recomputed? Currently kept
             },
             &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => {
                 let idx_opt : Option<usize> = store.bills.iter().position(|b|b.timestamp_to == timestamp_to && b.timestamp_from == timestamp_from);
