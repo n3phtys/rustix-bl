@@ -42,6 +42,12 @@ pub trait DatastoreQueries {
 
 
     fn remove_purchases_indices(&mut self, indices: Vec<usize>);
+
+
+
+
+    fn get_budget_freeby_id_useable_for(&self, recipient_id: u32) -> Option<usize>;
+    fn get_count_freeby_id_useable_for(&self, recipient_id: u32, item : u32) -> Option<usize>;
 }
 
 
@@ -268,6 +274,40 @@ impl DatastoreQueries for Datastore {
         for idx in indices.iter().rev() {
             self.purchases.remove(*idx);
         }
+    }
+    fn get_budget_freeby_id_useable_for(&self, recipient_id: u32) -> Option<usize> {
+        for (idx, freeby) in self.open_freebies.get(&recipient_id).unwrap_or(&Vec::new()).iter().enumerate() {
+            match *freeby {
+                Freeby::Transfer { .. } => {
+                  return Some(idx);
+                },
+                _ => (),
+            }
+        }
+        return None;
+    }
+
+    fn get_count_freeby_id_useable_for(&self, recipient_id: u32, item : u32) -> Option<usize> {
+        let cat : Option<String> = self.items.get(&item).unwrap().clone().category;
+        for (idx, freeby) in self.open_freebies.get(&recipient_id).unwrap_or(&Vec::new()).iter().enumerate() {
+            match *freeby {
+                Freeby::Classic { ref allowed_categories,
+                    ref allowed_drinks, .. } => {
+                    let cat = cat.clone();
+                    if allowed_drinks.contains(&item) {
+                        return Some(idx);
+                    } else {
+                        if cat.filter(|c|allowed_categories.contains(c)).is_some() {
+                            return Some(idx);
+                        } else {
+                            ()
+                        }
+                    }
+                },
+                _ => (),
+            }
+        }
+        return None;
     }
 }
 

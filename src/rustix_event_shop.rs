@@ -877,7 +877,21 @@ impl Event for BLEvents {
                             } => {
 
                                 //TODO: do not forget to use count and budget giveouts here, if they exist
+
+                                //TODO: first, get a count giveout
+
+                                //TODO: if count giveout was found, add purchase under donor as a PaidFor
+
+                                //TODO: if a count giveout does not exist, find a budget giveout, and add decrease / increase if possible
+
+                                //TODO: if no count giveout was found, make a normal purchase addition to the consumer
+
+
+                                //TODO: removed used up freebies
+
                                 unimplemented!()
+
+
                             },
                             Purchase::FFAPurchase {
                                 unique_id,
@@ -887,6 +901,9 @@ impl Event for BLEvents {
                                 donor,
                             } => {
                                 let day_idx : usize = bill_cpy.get_day_index(timestamp_epoch_millis);
+                                let item: Item = store.items.get(&item_id).unwrap().clone();
+
+
                                 let mut bill: &mut Bill = store.bills.get_mut(bill_idx).unwrap();
                                 if !bill.finalized_data.all_users.contains_key(&donor) {
                                     bill.finalized_data.all_users.insert(donor, user.clone());
@@ -895,6 +912,13 @@ impl Event for BLEvents {
                                         per_day: HashMap::new(),
                                     });
                                 }
+
+                                if !bill.finalized_data.all_items.contains_key(&item_id) {
+                                    bill.finalized_data.all_items.insert(item_id, item.clone());
+                                }
+
+
+
 
                                 if !bill.finalized_data.user_consumption[&donor].per_day.contains_key(&day_idx) {
                                     bill.finalized_data.user_consumption.get_mut(&donor).unwrap().per_day.insert(day_idx, BillUserDayInstance {
@@ -912,13 +936,6 @@ impl Event for BLEvents {
                 }
                 }
 
-
-                //TODO: iter() over all purchases in given time, add to maps via mapping function; original purchases are deleted from purchases vec
-                //TODO: for every purchase, look at user's open freebies first, and potentially consume one, in which case the purchase will be added to the donor instead
-                //TODO: when total > budget > 0, add budget as negative to recipient and as positive to donor, with exact names
-                //TODO: if freeby is empty, move to 'old' (keep 'old' ordered by timestamp for binary search)
-                //TODO: whenever a new item is found in purchases, add a copy to bill's hashmap of items
-                //TODO: add priced specials per day per user
                 //TODO: balance_cost_per_user also has to be reduced for each purchase
 
                 //remove purchases from purchases vec
