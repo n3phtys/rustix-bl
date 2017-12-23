@@ -182,8 +182,8 @@ impl Event for BLEvents {
                 {
                     return true;
                 },
-            &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
-            &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => unimplemented!(),
+            &BLEvents::CreateFreeCount { ref allowed_categories, ref allowed_drinks, ref allowed_number_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => (store.has_user(*donor) && store.has_user(*recipient)),
+            &BLEvents::CreateFreeBudget { ref cents_worth_total, ref text_message, ref created_timestamp, ref donor, ref recipient } => (store.has_user(*donor) && store.has_user(*recipient)),
             &BLEvents::UndoPurchase { unique_id } => store.get_purchase(unique_id).is_some(),
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
 
