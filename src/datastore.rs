@@ -39,6 +39,9 @@ pub trait DatastoreQueries {
     fn get_un_set_users_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u32>;
     fn get_bill_index(&mut self, timestamp_from: i64, timestamp_to: i64) -> Option<usize>;
     fn get_purchase_indices_to_bill(&self, bill: &Bill) -> Vec<usize>;
+
+
+    fn remove_purchases_indices(&mut self, indices: Vec<usize>);
 }
 
 
@@ -258,6 +261,13 @@ impl DatastoreQueries for Datastore {
             }
         }
         return v;
+    }
+
+    fn remove_purchases_indices(&mut self, mut indices: Vec<usize>) {
+        indices.sort();
+        for idx in indices.iter().rev() {
+            self.purchases.remove(*idx);
+        }
     }
 }
 

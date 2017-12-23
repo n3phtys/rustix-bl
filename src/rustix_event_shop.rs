@@ -921,8 +921,11 @@ impl Event for BLEvents {
                 //TODO: add priced specials per day per user
                 //TODO: balance_cost_per_user also has to be reduced for each purchase
 
-                //TODO: remove purchases from purchases vec
-                unimplemented!()
+                //remove purchases from purchases vec
+                {
+                    store.remove_purchases_indices(purchase_indices);
+                }
+                true
 
                 //TODO: Open question: how will purchase rank be recomputed? Currently kept
             },
