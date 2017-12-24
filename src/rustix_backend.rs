@@ -260,6 +260,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use rustix_event_shop;
     use rustix_event_shop::BLEvents;
     use serde_json;
     use rustix_backend::RustixBackend;
@@ -273,6 +274,7 @@ mod tests {
     use datastore::PurchaseFunctions;
     use datastore::DatastoreQueries;
     use rustix_backend::WriteBackend;
+    use rustix_event_shop::BLEvents::SetPriceForSpecial;
 
     fn build_test_backend() -> RustixBackend<persistencer::TransientPersister> {
         return RustixBackend {
@@ -564,6 +566,19 @@ mod tests {
         backend.purchase(0, 1, 20);
         backend.purchase(0, 0, 30);
 
+
+        backend.create_ffa(Vec::new(), vec![0, 1], 2, "my ffa message".to_string(), 35, 0);
+
+        let ffa_id : u64 = backend.datastore.open_ffa[0].get_id();
+
+        backend.special_purchase(0, "some special".to_string(), 40);
+
+        assert_eq!(backend.ffa_purchase(ffa_id, 0, 50), true);
+        assert_eq!(backend.ffa_purchase(ffa_id, 0, 60), true);
+
+
+        assert_eq!(backend.ffa_purchase(ffa_id, 1, 70), false);
+
         let user_key = (0, (&backend).datastore.users.get(&0).unwrap().username.to_string());
         let user_1_key = (1, (&backend).datastore.users.get(&1).unwrap().username.to_string());
         let item_0_key = (0, (&backend).datastore.items.get(&0).unwrap().name.to_string());
@@ -582,7 +597,7 @@ mod tests {
                 .unwrap()
                 .get(&item_0_key)
                 .unwrap(),
-            &90u32
+            &180u32
         );
 
         assert_eq!(
@@ -613,11 +628,18 @@ mod tests {
         );
         assert_eq!(
             backend.datastore.purchases.len(),
-            3
+            6
         );
 
         backend.update_user(0, "user a".to_string(), true, false, Some("user_id_external_a".to_string()));
         backend.update_user(1, "user b".to_string(), false, false, None);
+
+        assert_eq!(backend.apply(&BLEvents::FinalizeBill{timestamp_from: 0, timestamp_to: 100}) , false);
+
+        assert_eq!(backend.apply(&SetPriceForSpecial {
+            unique_id: 4,
+            price: 15,
+        }), true);
 
         assert_eq!(backend.apply(&BLEvents::FinalizeBill{timestamp_from: 0, timestamp_to: 100}) , true);
 
@@ -644,7 +666,7 @@ mod tests {
         );
         assert_eq!(
             backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().ffa_giveouts.len(),
-            0
+            1
         );
         assert_eq!(
             backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.len(),
@@ -652,7 +674,7 @@ mod tests {
         );
         assert_eq!(
             backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().specials_consumed.len(),
-            0
+            1
         );
 
 

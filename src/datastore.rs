@@ -388,28 +388,10 @@ impl Itemable for Datastore {
 
 impl Purchaseable for Datastore {
     fn get_purchase(&self, id: u64) -> Option<Purchase> {
-        for ele in &self.purchases {
-            match ele {
-                &Purchase::SimplePurchase {
-                    ref unique_id,
-                    ref timestamp_epoch_millis,
-                    ref item_id,
-                    ref consumer_id,
-                } => {
-
-                    if *unique_id == id {
-                        return Some(Purchase::SimplePurchase {
-                            unique_id: *unique_id,
-                            timestamp_epoch_millis: *timestamp_epoch_millis,
-                            item_id: *item_id,
-                            consumer_id: *consumer_id,
-                        })
-                    }
-                }
-                _ => {}
-            }
+        match self.purchases.binary_search_by(|p|p.get_unique_id().cmp(&id)) {
+            Ok(idx) => self.purchases.get(idx).map(|p|p.clone()),
+            _ => None,
         }
-        return None;
     }
     fn get_purchase_mut(&mut self, id: u64) -> Option<&mut Purchase> {
         return self.purchases.iter_mut().find(|p|{
