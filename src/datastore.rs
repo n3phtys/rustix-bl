@@ -44,6 +44,10 @@ pub trait DatastoreQueries {
     fn remove_purchases_indices(&mut self, indices: Vec<usize>);
 
 
+    fn get_ffa_freeby(&self, id: u64) -> Option<&Freeby>;
+    fn get_personal_freeby(&self, recipient_id: u32, freeby_id: u64) -> Option<&Freeby>;
+
+
 
 
     fn get_budget_freeby_id_useable_for(&self, recipient_id: u32) -> Option<usize>;
@@ -313,6 +317,39 @@ impl DatastoreQueries for Datastore {
             }
         }
         return None;
+    }
+    fn get_ffa_freeby(&self, id: u64) -> Option<&Freeby> {
+        let found_open = self.open_ffa.binary_search_by(|f|f.get_id().cmp(&id));
+        if found_open.is_ok() {
+            let found = found_open.unwrap();
+            return self.open_ffa.get(found);
+        } else {
+            let found_closed = self.used_up_freebies.binary_search_by(|f|f.get_id().cmp(&id));
+            if found_closed.is_ok() {
+                let found = found_closed.unwrap();
+                return self.used_up_freebies.get(found);
+            } else {
+                return None;
+            }
+        }
+    }
+
+    fn get_personal_freeby(&self, recipient_id: u32, freeby_id: u64) -> Option<&Freeby> {
+        let found_closed = self.used_up_freebies.binary_search_by(|f|f.get_id().cmp(&freeby_id));
+        if found_closed.is_ok() {
+            return self.used_up_freebies.get(found_closed.unwrap());
+        } else {
+            if self.open_freebies.contains_key(&recipient_id) {
+                let found_open = self.open_freebies.get(&recipient_id).unwrap().binary_search_by(|f| f.get_id().cmp(&freeby_id));
+                if found_open.is_ok() {
+                    return self.open_freebies.get(&recipient_id).unwrap().get(found_open.unwrap());
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        }
     }
 }
 
@@ -621,7 +658,7 @@ pub trait PurchaseFunctions {
 
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Freeby {
     FFA {
         id: u64,

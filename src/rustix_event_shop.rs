@@ -604,7 +604,8 @@ impl Event for BLEvents {
                 //potentially move used up freeby to "old" stack
                 if freeby.left() == 0 {
                     //add to new vec
-                    store.used_up_freebies.push(freeby);
+                    let pos = store.used_up_freebies.binary_search_by(|f|f.get_id().cmp(&freeby.get_id())).unwrap_or_else(|e| e);
+                    store.used_up_freebies.insert(pos, freeby);
                 } else {
                     store.open_ffa.insert(index, freeby);
                 }
@@ -964,7 +965,8 @@ impl Event for BLEvents {
                                         //removed used up freeby
                                         if old_count <= 1 {
                                             let freeby = store.open_freebies.get_mut(&consumer_id).unwrap().remove(cidx);
-                                            store.used_up_freebies.push(freeby);
+                                            let pos = store.used_up_freebies.binary_search_by(|f|f.get_id().cmp(&freeby.get_id())).unwrap_or_else(|e| e);
+                                            store.used_up_freebies.insert(pos, freeby);
                                         }
                                     },
                                     None => {
@@ -1066,7 +1068,8 @@ impl Event for BLEvents {
                                                 //removed used up freeby
                                                 if used_up {
                                                     let freeby = store.open_freebies.get_mut(&consumer_id).unwrap().remove(bidx);
-                                                    store.used_up_freebies.push(freeby);
+                                                    let pos = store.used_up_freebies.binary_search_by(|f|f.get_id().cmp(&freeby.get_id())).unwrap_or_else(|e| e);
+                                                    store.used_up_freebies.insert(pos, freeby);
                                                 }
                                             },
                                             None => (),
