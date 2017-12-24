@@ -546,6 +546,7 @@ mod tests {
         //create two users, create three items, make 1 user purchase 2 items but not the third
         backend.create_user("user a".to_string());
         backend.create_user("user b".to_string());
+        backend.create_user("donated_to_user".to_string());
         backend.create_item("item 1".to_string(), 45, None);
         backend.create_item("item 2".to_string(), 55, Some("category a".to_string()));
         backend.create_item("item 3".to_string(), 75, Some("category b".to_string()));
@@ -556,9 +557,9 @@ mod tests {
             let b = backend.datastore.users_suffix_tree.search("user a");
             let c = backend.datastore.users_suffix_tree.search("");
 
-            assert_eq!(a.len(), 2);
+            assert_eq!(a.len(), 3);
             assert_eq!(b.len(), 1);
-            assert_eq!(c.len(), 2);
+            assert_eq!(c.len(), 3);
         }
 
 
@@ -566,10 +567,23 @@ mod tests {
         backend.purchase(0, 1, 20);
         backend.purchase(0, 0, 30);
 
+        backend.create_free_budget(1000, "some budget message".to_string(), 31, 0, 2);
+        backend.create_free_count(vec!["category a".to_string()], vec![0], 2, "some count message".to_string(), 32, 0, 2);
+
+        backend.purchase(2, 0, 33);
+        backend.purchase(2, 1, 34);
+
+
 
         backend.create_ffa(Vec::new(), vec![0, 1], 2, "my ffa message".to_string(), 35, 0);
-
         let ffa_id : u64 = backend.datastore.open_ffa[0].get_id();
+
+
+        backend.purchase(2, 0, 36);
+        backend.purchase(2, 0, 37);
+        backend.purchase(2, 1, 38);
+        backend.purchase(2, 0, 39);
+
 
         backend.special_purchase(0, "some special".to_string(), 40);
 
@@ -628,16 +642,23 @@ mod tests {
         );
         assert_eq!(
             backend.datastore.purchases.len(),
-            6
+            12
         );
 
         backend.update_user(0, "user a".to_string(), true, false, Some("user_id_external_a".to_string()));
         backend.update_user(1, "user b".to_string(), false, false, None);
+        backend.update_user(2, "updated_donated_to_user".to_string(), true, false, Some("user_2_external_id".to_string()));
+
+
+        assert_eq!(
+            backend.datastore.open_freebies.get(&2).unwrap().len(),
+            2
+        );
 
         assert_eq!(backend.apply(&BLEvents::FinalizeBill{timestamp_from: 0, timestamp_to: 100}) , false);
 
         assert_eq!(backend.apply(&SetPriceForSpecial {
-            unique_id: 4,
+            unique_id: 10,
             price: 15,
         }), true);
 
@@ -658,7 +679,7 @@ mod tests {
         );
         assert_eq!(
             backend.datastore.bills[0].finalized_data.all_users.len(),
-            1
+            2
         );
         assert_eq!(
             backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().personally_consumed.len(),
@@ -670,10 +691,36 @@ mod tests {
         );
         assert_eq!(
             backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.len(),
+            1
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.get(&2).unwrap().budget_given,
+            190
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&2).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.get(&0).unwrap().budget_gotten,
+            190
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&2).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.get(&0).unwrap().budget_given,
             0
         );
         assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.get(&2).unwrap().budget_gotten,
+            0
+        );
+        assert_eq!(
+            backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().giveouts_to_user_id.get(&2).unwrap().count_giveouts_used.len(),
+            2
+        );
+        assert_eq!(
             backend.datastore.bills[0].finalized_data.user_consumption.get(&0).unwrap().per_day.get(&0).unwrap().specials_consumed.len(),
+            1
+        );
+
+
+        assert_eq!(
+            backend.datastore.open_freebies.get(&2).unwrap().len(),
             1
         );
 
@@ -823,33 +870,6 @@ mod tests {
 //        );
     }
 
-
-
-//    #[test]
-//    fn simple_add_special_purchase() {
-//        let mut backend = build_test_backend();
-//        let ts1 = 1i64;
-//        let ts2 = 2i64;
-//        let ts3 = 3i64;
-//        let special_name = "Mein eigener Text mit \n Zeilenumbruch";
-//
-//        backend.create_user("klaus".to_string());
-//        backend.create_item("item 1".to_string(), 45, None);
-//        backend.purchase(0, 0, ts1);
-//        backend.special_purchase(0, special_name.to_string(), ts2);
-//        backend.purchase(0,0, ts3);
-//        assert_eq!(backend.datastore.purchases.len(), 2);
-//        assert_eq!(backend.datastore.purchase_count, 3);
-//        assert_eq!(backend.datastore.balance_special.get(&(0u32, "klaus".to_string())).unwrap()[0].0, special_name.to_string());
-//        assert_eq!(backend.datastore.balance_special.get(&(0u32, "klaus".to_string())).unwrap()[0].1, ts2);
-//
-//        backend.create_bill(0,100, AllUsers, "remark of bill".to_string());
-//
-//        let bill : &Bill = &backend.datastore.bills[0];
-//
-////        assert_eq!(bill.special_map.len(), 1);
-////        assert_eq!(backend.datastore.balance_special.len(), 0);
-//    }
 
 
 
