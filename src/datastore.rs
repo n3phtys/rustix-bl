@@ -495,7 +495,7 @@ impl Default for Datastore {
 
 
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, TypeScriptify)]
 pub enum UserGroup {
     SingleUser { user_id: u32 },
     AllUsers,
