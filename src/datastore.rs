@@ -8,6 +8,7 @@ use left_threaded_avl_tree::ScoredIdTreeMock;
 use suffix_rs::*;
 use suffix_rs::KDTree;
 use left_threaded_avl_tree::AVLTree;
+use typescriptify::TypeScriptifyTrait;
 
 pub trait DatastoreQueries {
     fn get_purchase_timestamp(&self, purchase_id: u64) -> Option<i64>;
@@ -508,7 +509,7 @@ impl Default for UserGroup {
 }
 
 
-#[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq, TypeScriptify)]
 pub struct User {
     pub username: String,
     pub external_user_id: Option<String>,
@@ -533,7 +534,7 @@ impl Clone for User {
 
 
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub struct Item {
     pub name: String,
     pub item_id: u32,
@@ -544,7 +545,7 @@ pub struct Item {
 
 
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub enum BillState {
     Created,
     Finalized,
@@ -573,13 +574,13 @@ impl Default for BillState {
 
 //for every user in bill the username and id at finalization, plus info if invoice or not, and hashmaps for count of all item ids, also list of specials with pricing for each, and also hashmaps for budgets, hashmap for ffa, and hashmap for count giveouts paid for by others
 //usage is grouped by day
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub struct BillUserInstance {
     pub user_id: u32,
     pub per_day: HashMap<usize, BillUserDayInstance>,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub struct BillUserDayInstance {
     //pub begin_inclusive: i64,
     //pub end_exclusive: i64,
@@ -591,14 +592,14 @@ pub struct BillUserDayInstance {
     pub giveouts_to_user_id: HashMap<u32, PaidFor>,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub struct ExportableBillData {
     pub all_users : HashMap<u32, User>,
     pub all_items : HashMap<u32, Item>,
     pub user_consumption: HashMap<u32, BillUserInstance>,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub struct PricedSpecial {
     pub purchase_id: u64,
     pub price: u32,
@@ -606,7 +607,7 @@ pub struct PricedSpecial {
 }
 
 //one instance per user and per person that was given out to (per budget or count giveout)
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub struct PaidFor {
     pub recipient_id: u32,
     pub count_giveouts_used: HashMap<u32,u32>,
@@ -615,7 +616,7 @@ pub struct PaidFor {
 }
 
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub struct Bill {
     //set at creation
     pub timestamp_from: i64,
@@ -658,7 +659,7 @@ pub trait PurchaseFunctions {
 
 
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub enum Freeby {
     FFA {
         id: u64,
@@ -1089,7 +1090,7 @@ pub trait FreebyAble {
 
 
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TypeScriptify)]
 pub enum Purchase {
     FFAPurchase {
         unique_id: u64,

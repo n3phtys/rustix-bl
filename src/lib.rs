@@ -4,6 +4,10 @@
 #![allow(unused_variables)]
 
 #[macro_use]
+extern crate typescriptify_derive;
+extern crate typescriptify;
+
+#[macro_use]
 pub extern crate derive_builder;
 pub extern crate lmdb;
 pub extern crate serde;
