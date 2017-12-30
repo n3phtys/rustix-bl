@@ -146,6 +146,7 @@ impl DatastoreQueries for Datastore {
     fn global_log_filtered(&self, millis_start_inclusive: i64, millis_end_exclusive: i64) -> &[Purchase] {
         let (from, to) = find_purchase_indices(&self.purchases, millis_start_inclusive, millis_end_exclusive);
 
+        println!("index from: {} to: {} with full purchases: {:?}", from, to, self.purchases);
 
         return &self.purchases[from..to];
     }
