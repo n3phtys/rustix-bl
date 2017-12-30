@@ -652,8 +652,10 @@ pub trait PurchaseFunctions {
     fn get_user_id(&self) -> &u32;
     fn has_user_id(&self) -> bool;
     fn get_item_id(&self) -> &u32;
+    fn has_item_id(&self) -> bool;
     fn get_timestamp(&self) -> &i64;
     fn get_special_set_price(&self) -> Option<u32>;
+    fn is_special(&self) -> bool;
 }
 
 
@@ -1313,6 +1315,23 @@ impl PurchaseFunctions for Purchase {
             } => {
                 return timestamp_epoch_millis;
             }
+        }
+    }
+    fn has_item_id(&self) -> bool {
+        match self {
+            a @ &Purchase::SpecialPurchase {
+                ..
+            } => false,
+            _ => true,
+        }
+    }
+
+    fn is_special(&self) -> bool {
+        match self {
+            a @ &Purchase::SpecialPurchase {
+                ..
+            } => true,
+            _ => false,
         }
     }
 }
