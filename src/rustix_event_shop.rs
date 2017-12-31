@@ -114,7 +114,14 @@ pub enum BLEvents {
     SetPriceForSpecial {
         unique_id: u64,
         price: u32,
-    }
+    },
+    UpdateBill {
+        timestamp_from: i64, //timestamps uniquely identify a bill
+        timestamp_to: i64,
+        comment: String,
+        users: UserGroup,
+        users_that_will_not_be_billed: HashSet<u32>,
+    },
 }
 
 fn hashset(data: &[u32]) -> HashSet<u32> {
@@ -192,8 +199,17 @@ impl Event for BLEvents {
                     None => {return false;},
                 }
             },
+            &BLEvents::UpdateBill {  ref timestamp_from, ref timestamp_to, ref comment, ref users, ref users_that_will_not_be_billed } => {
+                match store.get_bill(*timestamp_from, *timestamp_to) {
+                    Some(b) => {return b.bill_state.is_created();},
+                    None => {return false;},
+                }
+            },
                 &BLEvents::ExportBill {  timestamp_from, timestamp_to } => {
-                store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty()
+                    match store.get_bill(timestamp_from, timestamp_to) {
+                        Some(b) => {return b.bill_state.is_finalized();},
+                        None => {return false;},
+                    }
             },
             &BLEvents::DeleteUnfinishedBill { timestamp_from, timestamp_to } => {
                 match store.get_bill(timestamp_from, timestamp_to) {
@@ -1155,6 +1171,17 @@ impl Event for BLEvents {
                         return true;
                     },
                     _ => return false,
+                }
+            },
+            &BLEvents::UpdateBill {  ref timestamp_from, ref timestamp_to, ref comment, ref users, ref users_that_will_not_be_billed } => {
+                match store.get_mut_bill(*timestamp_from, *timestamp_to) {
+                    Some(b) => {
+                        b.comment = comment.to_string();
+                        b.users = users.clone();
+                        b.users_that_will_not_be_billed = users_that_will_not_be_billed.clone();
+                        return true;
+                    },
+                    None => {return false;},
                 }
             },
         };
