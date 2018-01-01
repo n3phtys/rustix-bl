@@ -232,17 +232,33 @@ impl DatastoreQueries for Datastore {
         } else {
             let bill = bill_opt.unwrap();
 
-            let mut xs : Vec<u32> = vec![];
 
-            let filtered = self.users.iter().filter(|kv| {
-                !kv.1.deleted && matches_usergroup(&Some(*kv.0), &bill.users) && kv.1.is_billed && kv.1.external_user_id.is_none() && !(bill.users_that_will_not_be_billed.contains(kv.0))
-            });
+            let mut touched_users_set: HashSet<u32> = HashSet::new();
+            let mut users_undefined_indices: Vec<u32> = vec![];
 
-            for keyvalue in filtered {
-                xs.push(*keyvalue.0);
+
+            for purchase in self.global_log_filtered(timestamp_from, timestamp_to) {
+                let uid: u32 = *purchase.get_user_id();
+                if matches_usergroup(&Some(uid), &bill.users) {
+                    if !touched_users_set.contains(&uid) {
+                        //user matches criteria & isn't in list => add user to list
+                        touched_users_set.insert(uid);
+                        let usr = self.users.get(&uid).unwrap();
+
+                        if !usr.is_billed {
+                            //if user isn't billed per field, add to externally excluded list
+                        } else if bill.users_that_will_not_be_billed.contains(&uid) {
+                            //else if user is in internal exclusion list of bill, add to internally excluded list
+                        } else if usr.external_user_id.is_none() {
+                            // else add user to other list
+                            users_undefined_indices.push(uid);
+                        } else if usr.external_user_id.is_some() {
+                        }
+                    }
+                }
             }
 
-            return xs;
+            return users_undefined_indices;
         }
     }
     fn get_unpriced_specials_to_bill(&self, timestamp_from: i64, timestamp_to: i64) -> Vec<u64>
