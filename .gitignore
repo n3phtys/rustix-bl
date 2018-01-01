@@ -2,3 +2,4 @@ target/
 **/*.rs.bk
 /.idea/
 /beerlist-rustix.iml
+Cargo.lock
