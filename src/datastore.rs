@@ -356,7 +356,7 @@ impl DatastoreQueries for Datastore {
 }
 
 
-fn matches_usergroup(user_id: &Option<u32>, usergroup: &UserGroup) -> bool {
+pub fn matches_usergroup(user_id: &Option<u32>, usergroup: &UserGroup) -> bool {
     if user_id.is_some() {
         let checked_user_id = user_id.clone().unwrap();
         return match *usergroup {
