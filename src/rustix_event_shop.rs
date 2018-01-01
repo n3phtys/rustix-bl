@@ -196,7 +196,7 @@ impl Event for BLEvents {
                 //check if all specials are set with price and all users are too
                 match store.get_bill(timestamp_from, timestamp_to) {
                     Some(b) => {
-                        println!("Bill for finalization is found, with is_created() = {}, store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() = {}, and store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty() = {}", b.bill_state.is_created() , store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() , store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty() );
+                        println!("Bill for finalization is found, with is_created() = {}, store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() = {}, and store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty() = {}\nstore.get_un_set_users_to_bill(timestamp_from, timestamp_to) = {:?}", b.bill_state.is_created() , store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() , store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty(), store.get_un_set_users_to_bill(timestamp_from, timestamp_to) );
                         return b.bill_state.is_created() && store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty();},
                     None => {return false;},
                 }
