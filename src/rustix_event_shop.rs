@@ -195,7 +195,9 @@ impl Event for BLEvents {
             &BLEvents::FinalizeBill {  timestamp_from, timestamp_to } => {
                 //check if all specials are set with price and all users are too
                 match store.get_bill(timestamp_from, timestamp_to) {
-                    Some(b) => {return b.bill_state.is_created() && store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty();},
+                    Some(b) => {
+                        println!("Bill for finalization is found, with is_created() = {}, store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() = {}, and store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty() = {}", b.bill_state.is_created() , store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() , store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty() );
+                        return b.bill_state.is_created() && store.get_un_set_users_to_bill(timestamp_from, timestamp_to).is_empty() && store.get_unpriced_specials_to_bill(timestamp_from, timestamp_to).is_empty();},
                     None => {return false;},
                 }
             },
