@@ -9,9 +9,9 @@ use persistencer::LMDBPersistencer;
 use persistencer::Persistencer;
 
 #[derive(Debug)]
-pub struct RustixBackend<T: persistencer::Persistencer + persistencer::LMDBPersistencer> {
+pub struct RustixBackend {
     pub datastore: datastore::Datastore,
-    pub persistencer: T,
+    pub persistencer: persistencer::FilePersister,
 }
 /*
 
@@ -73,10 +73,7 @@ pub trait WriteBackend {
 }
 
 
-impl<T> WriteBackend for RustixBackend<T>
-where
-    T: persistencer::Persistencer + persistencer::LMDBPersistencer,
-{
+impl WriteBackend for RustixBackend {
     fn create_bill(&mut self, timestamp_from: i64, timestamp_to: i64, user_ids: UserGroup, comment: String) -> bool {
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::CreateBill {
@@ -267,6 +264,7 @@ mod tests {
     use std;
     use datastore;
     use persistencer;
+    use config;
     use std::collections::HashSet;
     use datastore::UserGroup::AllUsers;
     use suffix_rs::KDTree;
@@ -276,10 +274,11 @@ mod tests {
     use rustix_backend::WriteBackend;
     use rustix_event_shop::BLEvents::SetPriceForSpecial;
 
-    fn build_test_backend() -> RustixBackend<persistencer::TransientPersister> {
+    fn build_test_backend() -> RustixBackend {
+        let config = config::StaticConfig::default();
         return RustixBackend {
             datastore: datastore::Datastore::default(),
-            persistencer: persistencer::TransientPersister::default(),
+            persistencer: persistencer::FilePersister::new(config).unwrap(),
         };
     }
 

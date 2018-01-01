@@ -41,7 +41,7 @@ pub mod config;
 use std::collections::HashSet;
 use config::StaticConfig;
 
-pub fn build_transient_backend() -> rustix_backend::RustixBackend<persistencer::TransientPersister>
+pub fn build_transient_backend() -> rustix_backend::RustixBackend
 {
     return build_transient_backend_with(20, 20);
 }
@@ -49,40 +49,27 @@ pub fn build_transient_backend() -> rustix_backend::RustixBackend<persistencer::
 pub fn build_transient_backend_with(
     users_per_page: u8,
     top_users: u8,
-) -> rustix_backend::RustixBackend<persistencer::TransientPersister> {
+) -> rustix_backend::RustixBackend {
+    let mut config = StaticConfig::default();
+    config.users_per_page = users_per_page as usize;
+    config.users_in_top_users = top_users as usize;
+    config.top_drinks_per_user = 4;
+
     return rustix_backend::RustixBackend {
         datastore: datastore::Datastore::default(),
-        persistencer: persistencer::TransientPersister {
-            config: StaticConfig {
-                users_per_page: users_per_page as usize,
-                users_in_top_users: top_users as usize,
-                top_drinks_per_user: 4,
-            },
-            events_stored: 0,
-        },
+        persistencer: persistencer::FilePersister::new(config).unwrap(),
     };
 }
 
-pub fn build_persistent_backend(
-    dir: &std::path::Path,
-) -> Result<rustix_backend::RustixBackend<persistencer::FilePersister>, lmdb::Error> {
-    let db_flags: lmdb::DatabaseFlags = lmdb::DatabaseFlags::empty();
-    let db_environment = try!(lmdb::Environment::new().set_max_dbs(1).open(dir));
-    let database = try!(db_environment.create_db(None, db_flags));
-    return Ok(rustix_backend::RustixBackend {
+pub fn build_persistent_backend(dir: &std::path::Path) -> rustix_backend::RustixBackend {
+    let mut config = StaticConfig::default_persistence(dir.to_str().unwrap());
+
+    return rustix_backend::RustixBackend {
         datastore: datastore::Datastore::default(),
-        persistencer: persistencer::FilePersister {
-            config: config::StaticConfig {
-                users_per_page: 20,
-                users_in_top_users: 20,
-                top_drinks_per_user: 4,
-            },
-            db_env: db_environment,
-            db: database,
-            events_stored: 0,
-        },
-    });
+        persistencer: persistencer::FilePersister::new(config).unwrap(),
+    };
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -99,20 +86,17 @@ mod tests {
     fn it_add_user() {
         let dir = tempdir::TempDir::new("temptestdir").unwrap();
 
-        let b = build_persistent_backend(dir.as_ref());
+        let mut backend = build_persistent_backend(dir.as_ref());
 
-        println!("{:?}", b);
-
-        match b {
-            Err(_) => assert!(false),
-            Ok(mut backend) => {
+        println!("{:?}", backend);
+ {
                 backend.create_user("klaus".to_string());
                 assert_eq!(
                     backend.datastore.users.get(&0u32).unwrap().username,
                     "klaus".to_string()
                 );
             }
-        }
+
     }
 
 
@@ -156,9 +140,8 @@ mod tests {
         let dir = std::path::Path::new("tests/testdata");
 
         {
-            match build_persistent_backend(dir) {
-                Err(_) => assert!(false),
-                Ok(mut backend) => {
+            let mut backend = build_persistent_backend(dir);
+                {
                     let x = backend.reload();
                     println!("Loaded Backend: {:?}", backend);
                     assert_eq!(x.unwrap(), 1);
@@ -167,7 +150,7 @@ mod tests {
                         "klaus".to_string()
                     );
                 }
-            }
+
         }
     }
 

@@ -80,64 +80,44 @@ pub trait Persistencer {
 }
 
 #[derive(Debug)]
-pub struct FilePersister {
-    pub config: StaticConfig,
+pub struct LmdbDb {
     pub db: lmdb::Database,
     pub db_env: lmdb::Environment,
-    pub events_stored: u32,
 }
 
 #[derive(Debug)]
-pub struct TransientPersister {
+pub struct FilePersister {
     pub config: StaticConfig,
+    pub lmdb: Option<LmdbDb>,
     pub events_stored: u32,
 }
 
-impl Default for TransientPersister {
-    fn default() -> Self {
-        return TransientPersister {
-            config: StaticConfig::default(),
+impl FilePersister {
+    pub fn new(config: StaticConfig) -> Result<Self, lmdb::Error> {
+
+        let lmdb = if config.use_persistence {
+            let dir: &std::path::Path = std::path::Path::new(&config.persistence_file_path);
+            let db_flags: lmdb::DatabaseFlags = lmdb::DatabaseFlags::empty();
+            let db_environment = try!(lmdb::Environment::new().set_max_dbs(1).open(&dir));
+            let database = try!(db_environment.create_db(None, db_flags));
+            Some(LmdbDb{
+                db: database,
+                db_env: db_environment,
+            })
+        } else {
+            None
+        };
+
+        let mut fp = FilePersister {
+            config: config,
+            lmdb: lmdb,
             events_stored: 0,
         };
+
+        return Ok(fp);
     }
 }
 
-
-impl LMDBPersistencer for TransientPersister {
-    fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError> {
-        return Ok(self.increment_counter());
-    }
-
-
-    fn increment_counter(&mut self) -> () {
-        self.events_stored = self.events_stored + 1;
-    }
-    fn get_counter(&self) -> u32 {
-        return self.events_stored;
-    }
-}
-
-impl Persistencer for TransientPersister {
-    fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
-        let allowed = event.can_be_applied(datastore);
-        if allowed {
-            let id: u32 = self.get_counter() + 1u32;
-            match self.store_event_in_db(id, event) {
-                Err(e) => return false,
-                Ok(t) => {
-                    return event.apply(datastore, &self.config);
-                }
-            }
-        } else {
-            return false;
-        }
-    }
-
-    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
-        let counter = 0u32;
-        return Ok(counter);
-    }
-}
 
 pub trait LMDBPersistencer {
     fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError>;
@@ -155,13 +135,16 @@ fn transform_u32_to_array_of_u8(x: u32) -> [u8; 4] {
 
 impl LMDBPersistencer for FilePersister {
     fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError> {
-        {
-            let mut rw_transaction: RwTransaction = try!(RwTransaction::new(&self.db_env));
-            let tx_flags: WriteFlags = WriteFlags::empty();
-            let key = transform_u32_to_array_of_u8(id);
-            let data = try!(serde_json::to_string(event));
-            let result = rw_transaction.put(self.db, &key, &data, tx_flags);
-            try!(rw_transaction.commit());
+        match self.lmdb {
+            Some(ref lmdb) => {
+                let mut rw_transaction: RwTransaction = try!(RwTransaction::new(&lmdb.db_env));
+                let tx_flags: WriteFlags = WriteFlags::empty();
+                let key = transform_u32_to_array_of_u8(id);
+                let data = try!(serde_json::to_string(event));
+                let result = rw_transaction.put(lmdb.db, &key, &data, tx_flags);
+                try!(rw_transaction.commit());
+            },
+            None => (),
         }
         return Ok(self.increment_counter());
     }
@@ -192,26 +175,30 @@ impl Persistencer for FilePersister {
     }
 
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
-        let mut counter = 0u32;
-        let env = &self.db_env;
-        let db = self.db;
-        let raw_ro_transaction = try!(RoTransaction::new(&env));
-        {
-            let mut read_transaction: RoCursor = try!(RoCursor::new(&raw_ro_transaction, db));
+        let mut counter = 0u32; //TODO: only check starting from store event counter (to deal with snapshots)
 
-            for keyvalue in read_transaction.iter_start() {
-                let (key, value) = keyvalue;
-                let json = try!(str::from_utf8(value));
-                println!("{:?}", json);
-                let event: BLEvents = try!(serde_json::from_str(json));
-                if event.can_be_applied(datastore) {
-                    event.apply(datastore, &self.config);
-                    counter = counter + 1u32;
+
+        match self.lmdb {
+            Some(ref lmdb) => {
+                let raw_ro_transaction = try!(RoTransaction::new(&lmdb.db_env));
+                {
+                    let mut read_transaction: RoCursor = try!(RoCursor::new(&raw_ro_transaction, lmdb.db));
+
+                    for keyvalue in read_transaction.iter_start() {
+                        let (key, value) = keyvalue;
+                        let json = try!(str::from_utf8(value));
+                        println!("{:?}", json);
+                        let event: BLEvents = try!(serde_json::from_str(json));
+                        if event.can_be_applied(datastore) {
+                            event.apply(datastore, &self.config);
+                            counter = counter + 1u32;
+                        }
+                    }
                 }
-            }
+                try!(raw_ro_transaction.commit());
+            },
+            None => (),
         }
-        try!(raw_ro_transaction.commit());
-
 
         return Ok(counter);
     }
