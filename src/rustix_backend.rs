@@ -69,7 +69,7 @@ pub trait WriteBackend {
 
     fn undo_purchase(&mut self, unique_id: u64) -> bool;
 
-    fn reload(&mut self) -> Result<u32, persistencer::RustixError>;
+    fn reload(&mut self) -> Result<u64, persistencer::RustixError>;
 }
 
 
@@ -135,7 +135,7 @@ impl WriteBackend for RustixBackend {
     }
 
 
-    fn reload(&mut self) -> Result<u32, persistencer::RustixError> {
+    fn reload(&mut self) -> Result<u64, persistencer::RustixError> {
         return self.persistencer.reload_from_filepath(&mut self.datastore);
     }
     fn undo_purchase(&mut self, unique_id: u64) -> bool {

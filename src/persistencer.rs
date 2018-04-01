@@ -75,7 +75,7 @@ pub trait Persistencer {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool;
 
     //returns number of events loaded
-    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
+    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u64, RustixError>;
     //fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
 }
 
@@ -89,7 +89,7 @@ pub struct LmdbDb {
 pub struct FilePersister {
     pub config: StaticConfig,
     pub lmdb: Option<LmdbDb>,
-    pub events_stored: u32,
+    pub events_stored: u64,
 }
 
 impl FilePersister {
@@ -124,9 +124,9 @@ impl FilePersister {
 
 
 pub trait LMDBPersistencer {
-    fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError>;
+    fn store_event_in_db(&mut self, id: u64, event: &BLEvents) -> Result<(), RustixError>;
     fn increment_counter(&mut self) -> ();
-    fn get_counter(&self) -> u32;
+    fn get_counter(&self) -> u64;
 }
 
 fn transform_u32_to_array_of_u8(x: u32) -> [u8; 4] {
@@ -138,12 +138,12 @@ fn transform_u32_to_array_of_u8(x: u32) -> [u8; 4] {
 }
 
 impl LMDBPersistencer for FilePersister {
-    fn store_event_in_db(&mut self, id: u32, event: &BLEvents) -> Result<(), RustixError> {
+    fn store_event_in_db(&mut self, id: u64, event: &BLEvents) -> Result<(), RustixError> {
         match self.lmdb {
             Some(ref lmdb) => {
-                let mut rw_transaction: RwTransaction = try!(RwTransaction::new(&lmdb.db_env));
+                let mut rw_transaction: RwTransaction = try!(lmdb.db_env.begin_rw_txn());
                 let tx_flags: WriteFlags = WriteFlags::empty();
-                let key = transform_u32_to_array_of_u8(id);
+                let key = id.to_string().into_bytes();//   transform_u32_to_array_of_u8(id);
                 let data = try!(serde_json::to_string(event));
                 let result = rw_transaction.put(lmdb.db, &key, &data, tx_flags);
                 try!(rw_transaction.commit());
@@ -157,7 +157,7 @@ impl LMDBPersistencer for FilePersister {
     fn increment_counter(&mut self) -> () {
         self.events_stored = self.events_stored + 1;
     }
-    fn get_counter(&self) -> u32 {
+    fn get_counter(&self) -> u64 {
         return self.events_stored;
     }
 }
@@ -166,7 +166,7 @@ impl Persistencer for FilePersister {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
         let allowed = event.can_be_applied(datastore);
         if allowed {
-            let id: u32 = self.get_counter() + 1u32;
+            let id: u64 = self.get_counter() + 1u64;
             match self.store_event_in_db(id, event) {
                 Err(e) => return false,
                 Ok(t) => {
@@ -178,28 +178,28 @@ impl Persistencer for FilePersister {
         }
     }
 
-    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError> {
-        let mut counter = 0u32; //TODO: only check starting from store event counter (to deal with snapshots)
-
+    fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u64, RustixError> {
+        let mut counter = self.get_counter();
+        //TODO: only check starting from store event counter (to deal with snapshots)
 
         match self.lmdb {
             Some(ref lmdb) => {
-                let raw_ro_transaction = try!(RoTransaction::new(&lmdb.db_env));
+                let tx = try!(lmdb.db_env.begin_ro_txn());
                 {
-                    let mut read_transaction: RoCursor = try!(RoCursor::new(&raw_ro_transaction, lmdb.db));
-
-                    for keyvalue in read_transaction.iter_start() {
+                    let mut cursor: RoCursor = try!(tx.open_ro_cursor(lmdb.db));
+                    let key = counter.to_string().into_bytes();
+                        let iter = if counter != 0u64 { cursor.iter_from(key) } else { cursor.iter_start() };
+                    for keyvalue in iter {
                         let (key, value) = keyvalue;
                         let json = try!(str::from_utf8(value));
                         println!("{:?}", json);
                         let event: BLEvents = try!(serde_json::from_str(json));
                         if event.can_be_applied(datastore) {
                             event.apply(datastore, &self.config);
-                            counter = counter + 1u32;
+                            counter = counter + 1u64;
                         }
                     }
                 }
-                try!(raw_ro_transaction.commit());
             },
             None => (),
         }

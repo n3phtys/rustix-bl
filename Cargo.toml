@@ -1,7 +1,7 @@
 [package]
 authors = ["nephtys <christopher.kaag@gmail.com>"]
 name = "rustix-bl"
-version = "0.4.1"
+version = "0.4.2"
 
 
 
@@ -24,16 +24,16 @@ license = "MIT"
 
 
 [dependencies]
-suffix-rs = "0.1.0"
-bincode = "0.8.0"
-custom_derive = "0.1.7"
-derive_builder = "0.5.0"
-lmdb = "0.7.1"
-quick-error = "1.2.0"
-rand = "0.3.16"
-serde = "1.0.11"
-serde_derive = "1.0.11"
-serde_json = "1.0.2"
-tempdir = "0.3.5"
+suffix-rs = "0.1"
+bincode = "0.8"
+custom_derive = "0.1"
+derive_builder = "0.5"
+lmdb = "0.8"
+quick-error = "1.2"
+rand = "0.3"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+tempdir = "0.3"
 typescriptify-derive = "0.1"
 typescriptify = "0.1"
