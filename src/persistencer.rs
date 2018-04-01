@@ -164,11 +164,16 @@ impl LMDBPersistencer for FilePersister {
 impl Persistencer for FilePersister {
     fn test_store_apply(&mut self, event: &BLEvents, datastore: &mut Datastore) -> bool {
         let allowed = event.can_be_applied(datastore);
+        println!("Result with allowed = {} for event: {:?}", allowed, event);
         if allowed {
             let id: u64 = self.get_counter() + 1u64;
             match self.store_event_in_db(id, event) {
-                Err(e) => return false,
+                Err(e) => {
+                    println!("Failure storing for {:?}", event);
+                    return false
+                },
                 Ok(t) => {
+                    println!("Success storing for {:?}", event);
                     return event.apply(datastore, &self.config);
                 }
             }
