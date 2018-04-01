@@ -185,23 +185,28 @@ impl Persistencer for FilePersister {
 
         match self.lmdb {
             Some(ref lmdb) => {
-                let tx = try!(lmdb.db_env.begin_ro_txn());
-                {
-                    let mut cursor: RoCursor = try!(tx.open_ro_cursor(lmdb.db));
-                    let key = counter.to_string().into_bytes();
-                    let iter = if counter != 0u64 {
-                        cursor.iter_from(key)
-                    } else {
-                        cursor.iter_start()
-                    };
-                    for keyvalue in iter {
-                        let (key, value) = keyvalue;
-                        let json = try!(str::from_utf8(value));
-                        println!("{:?}", json);
-                        let event: BLEvents = try!(serde_json::from_str(json));
-                        if event.can_be_applied(datastore) {
-                            event.apply(datastore, &self.config);
-                            counter = counter + 1u64;
+                //build and use iterator if database is non-empty
+                let count = lmdb.db_env.stat().unwrap().entries();
+                if (count > 0) {
+                    let tx = try!(lmdb.db_env.begin_ro_txn());
+                    {
+                        let mut cursor: RoCursor = try!(tx.open_ro_cursor(lmdb.db));
+
+                        let key = counter.to_string().into_bytes();
+                        let iter = if counter != 0u64 {
+                            cursor.iter_from(key)
+                        } else {
+                            cursor.iter_start()
+                        };
+                        for keyvalue in iter {
+                            let (key, value) = keyvalue;
+                            let json = try!(str::from_utf8(value));
+                            println!("{:?}", json);
+                            let event: BLEvents = try!(serde_json::from_str(json));
+                            if event.can_be_applied(datastore) {
+                                event.apply(datastore, &self.config);
+                                counter = counter + 1u64;
+                            }
                         }
                     }
                 }
