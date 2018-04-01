@@ -98,8 +98,11 @@ impl FilePersister {
         let lmdb = if config.use_persistence {
             let dir: &std::path::Path = std::path::Path::new(&config.persistence_file_path);
             let db_flags: lmdb::DatabaseFlags = lmdb::DatabaseFlags::empty();
+            println!("trying to get env");
             let db_environment = try!(lmdb::Environment::new().set_max_dbs(1).open(&dir));
+            println!("trying to get database");
             let database = try!(db_environment.create_db(None, db_flags));
+            println!("gotten database");
             Some(LmdbDb{
                 db: database,
                 db_env: db_environment,
@@ -107,6 +110,7 @@ impl FilePersister {
         } else {
             None
         };
+        println!("first part finished");
 
         let mut fp = FilePersister {
             config: config,
