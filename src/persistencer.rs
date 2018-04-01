@@ -94,7 +94,6 @@ pub struct FilePersister {
 
 impl FilePersister {
     pub fn new(config: StaticConfig) -> Result<Self, lmdb::Error> {
-
         let lmdb = if config.use_persistence {
             let dir: &std::path::Path = std::path::Path::new(&config.persistence_file_path);
             let db_flags: lmdb::DatabaseFlags = lmdb::DatabaseFlags::empty();
@@ -103,7 +102,7 @@ impl FilePersister {
             println!("trying to get database");
             let database = try!(db_environment.create_db(None, db_flags));
             println!("gotten database");
-            Some(LmdbDb{
+            Some(LmdbDb {
                 db: database,
                 db_env: db_environment,
             })
@@ -147,7 +146,7 @@ impl LMDBPersistencer for FilePersister {
                 let data = try!(serde_json::to_string(event));
                 let result = rw_transaction.put(lmdb.db, &key, &data, tx_flags);
                 try!(rw_transaction.commit());
-            },
+            }
             None => (),
         }
         return Ok(self.increment_counter());
@@ -182,13 +181,19 @@ impl Persistencer for FilePersister {
         let mut counter = self.get_counter();
         //TODO: only check starting from store event counter (to deal with snapshots)
 
+        println!("Reloading events from lmdb with counter = {}", counter);
+
         match self.lmdb {
             Some(ref lmdb) => {
                 let tx = try!(lmdb.db_env.begin_ro_txn());
                 {
                     let mut cursor: RoCursor = try!(tx.open_ro_cursor(lmdb.db));
                     let key = counter.to_string().into_bytes();
-                        let iter = if counter != 0u64 { cursor.iter_from(key) } else { cursor.iter_start() };
+                    let iter = if counter != 0u64 {
+                        cursor.iter_from(key)
+                    } else {
+                        cursor.iter_start()
+                    };
                     for keyvalue in iter {
                         let (key, value) = keyvalue;
                         let json = try!(str::from_utf8(value));
@@ -200,7 +205,7 @@ impl Persistencer for FilePersister {
                         }
                     }
                 }
-            },
+            }
             None => (),
         }
 
