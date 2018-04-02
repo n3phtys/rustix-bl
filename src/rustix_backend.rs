@@ -285,20 +285,20 @@ impl WriteBackend for RustixBackend {
                                 return Some(self.datastore.version);
                             },
                             Err(e) => {
-                                println!("Eror writing file on snapshot()");
+                                println!("Eror writing file on snapshot(): {:?}", e);
                                 return None
                             },
                         }
                     },
                     Err(e) => {
-                        println!("Error opening file on snapshot()");
+                        println!("Error opening file on snapshot(): {:?}", e);
                         return None
                     },
                 }
             },
             //if failure, return None
             Err(e) => {
-                println!("Error creating json on snapshot()");
+                println!("Error creating json on snapshot(): {:?}", e);
                 return None
             },
         }
