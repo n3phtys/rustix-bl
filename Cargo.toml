@@ -24,6 +24,7 @@ license = "MIT"
 
 
 [dependencies]
+byteorder = "1"
 suffix-rs = "0.1"
 bincode = "0.8"
 custom_derive = "0.1"

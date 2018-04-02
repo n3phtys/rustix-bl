@@ -14,6 +14,8 @@ pub extern crate serde;
 pub extern crate serde_json;
 pub extern crate serde_yaml;
 
+pub extern crate byteorder;
+
 
 pub extern crate suffix_rs;
 

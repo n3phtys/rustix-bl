@@ -25,6 +25,8 @@ use std;
 use std::error::Error;
 use std::fmt;
 use errors;
+use std::io::Cursor as IOCursor;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 quick_error! {
     #[derive(Debug)]
@@ -138,7 +140,7 @@ impl LMDBPersistencer for FilePersister {
             Some(ref lmdb) => {
                 let mut rw_transaction: RwTransaction = try!(lmdb.db_env.begin_rw_txn());
                 let tx_flags: WriteFlags = WriteFlags::empty();
-                let key = id.to_string().into_bytes();//   transform_u32_to_array_of_u8(id);
+                let key = id_to_key(id);//   transform_u32_to_array_of_u8(id);
                 let data = try!(serde_json::to_string(event));
                 let result = rw_transaction.put(lmdb.db, &key, &data, tx_flags);
                 try!(rw_transaction.commit());
@@ -186,7 +188,7 @@ impl Persistencer for FilePersister {
                     {
                         let mut cursor: RoCursor = try!(tx.open_ro_cursor(lmdb.db));
 
-                        let key = counter.to_string().into_bytes();
+                        let key = id_to_key(counter + 1u64);
                         let iter = if counter != 0u64 {
                             cursor.iter_from(key)
                         } else {
@@ -194,7 +196,7 @@ impl Persistencer for FilePersister {
                         };
                         for keyvalue in iter {
                             let (key, value) = keyvalue;
-                            let id = std::str::from_utf8(key).unwrap();
+                            let id = key_to_id(key);
                             let json = try!(str::from_utf8(value));
                             println!("{:?} [ {:?} ] ==> {:?}", id, key, json);
                             let event: BLEvents = try!(serde_json::from_str(json));
@@ -211,4 +213,16 @@ impl Persistencer for FilePersister {
 
         return Ok(counter);
     }
+}
+
+
+pub fn id_to_key(id: u64) -> Vec<u8> {
+    let mut wtr = vec![];
+    wtr.write_u64::<BigEndian>(id).unwrap();
+    return wtr;
+}
+
+pub fn key_to_id(key: &[u8]) -> u64 {
+    let mut rdr = IOCursor::new(key);
+    return rdr.read_u64::<BigEndian>().unwrap();
 }
