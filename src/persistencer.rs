@@ -194,8 +194,9 @@ impl Persistencer for FilePersister {
                         };
                         for keyvalue in iter {
                             let (key, value) = keyvalue;
+                            let id = std::str::from_utf8(key).unwrap();
                             let json = try!(str::from_utf8(value));
-                            println!("{:?}", json);
+                            println!("{:?} [ {:?} ] ==> {:?}", id, key, json);
                             let event: BLEvents = try!(serde_json::from_str(json));
                             if event.can_be_applied(datastore) {
                                 event.apply(datastore, &self.config);
