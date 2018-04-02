@@ -29,9 +29,9 @@ pub trait WriteBackend {
 
     fn apply(&mut self, event: &rustix_event_shop::BLEvents) -> bool;
 
-    fn snapshot(&mut self, persistence_dir_file_path: &str, use_persistence: bool) -> Option<u64>;
+    fn snapshot(&mut self) -> Option<u64>;
 
-    fn load_snapshot(&mut self, persistence_dir_file_path: &str, use_persistence: bool) -> Option<u64>;
+    fn load_snapshot(&mut self) -> Option<u64>;
 
     fn create_bill(&mut self, timestamp_from: i64, timestamp_to: i64, user_ids: UserGroup, comment: String) -> bool;
     fn create_item(&mut self, itemname: String, price_cents: u32, category: Option<String>)
@@ -142,9 +142,7 @@ impl WriteBackend for RustixBackend {
 
 
     fn reload(&mut self) -> Result<u64, persistencer::RustixError> {
-        let path = self.persistencer.config.persistence_file_path.to_string();
-        let use_pers = self.persistencer.config.use_persistence;
-        let counter = self.load_snapshot(&path, use_pers);
+        let counter = self.load_snapshot();
         return self.persistencer.reload_from_filepath(&mut self.datastore);
     }
     fn undo_purchase(&mut self, unique_id: u64) -> bool {
@@ -259,14 +257,14 @@ impl WriteBackend for RustixBackend {
         return self.persistencer.test_store_apply(event, &mut self.datastore);
     }
 
-    fn snapshot(&mut self, persistence_dir_file_path: &str, use_persistence: bool) -> Option<u64> {
+    fn snapshot(&mut self) -> Option<u64> {
         //only if persistence layer
-        if !use_persistence {
+        if !self.persistencer.config.use_persistence {
             return None;
         }
 
         //take path of dir: <path>/snapshot.json
-        let filepath = persistence_dir_file_path.to_owned() + "/snapshot.json";
+        let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.json";
 
         //take current state and turn it into json
         match serde_json::to_string(&self.datastore) {
@@ -292,14 +290,14 @@ impl WriteBackend for RustixBackend {
             Err(e) => return None,
         }
     }
-    fn load_snapshot(&mut self, persistence_dir_file_path: &str, use_persistence: bool) -> Option<u64> {
+    fn load_snapshot(&mut self) -> Option<u64> {
         //only if using persistence
-        if !use_persistence {
+        if !self.persistencer.config.use_persistence {
             return None;
         }
 
         //take <persistence_path>/snapshot.json and load it
-        let filepath = persistence_dir_file_path.to_owned() + "/snapshot.json";
+        let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.json";
 
         let mut file_raw= File::open(filepath);
         if file_raw.is_err() {
