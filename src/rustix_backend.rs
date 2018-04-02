@@ -5,6 +5,7 @@ use rustix_event_shop;
 use persistencer::LMDBPersistencer;
 use persistencer::Persistencer;
 use serde_json;
+use serde_yaml;
 use std;
 use std::fs::File;
 use std::io::prelude::*;
@@ -264,14 +265,14 @@ impl WriteBackend for RustixBackend {
             return None;
         }
 
-        //take path of dir: <path>/snapshot.json
-        let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.json";
+        //take path of dir: <path>/snapshot.yaml
+        let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.yaml";
         println!("snapshot() called, with file = {}", &filepath);
 
         println!("datastore = {:?}", &self.datastore);
 
         //take current state and turn it into json
-        match serde_json::to_string(&self.datastore) {
+        match serde_yaml::to_string(&self.datastore) {
             Ok(json) => {
 
                 println!("snapshot() called, writing json = {}", &json);
@@ -311,8 +312,8 @@ impl WriteBackend for RustixBackend {
             return None;
         }
 
-        //take <persistence_path>/snapshot.json and load it
-        let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.json";
+        //take <persistence_path>/snapshot.yaml and load it
+        let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.yaml";
 
         let mut file_raw= File::open(filepath);
         if file_raw.is_err() {
@@ -325,7 +326,7 @@ impl WriteBackend for RustixBackend {
         }
 
         //extract datastore from json
-        let ds_raw = serde_json::from_str(&contents);
+        let ds_raw = serde_yaml::from_str(&contents);
         if (ds_raw.is_err()) {
             return None;
         }

@@ -12,6 +12,7 @@ pub extern crate derive_builder;
 pub extern crate lmdb;
 pub extern crate serde;
 pub extern crate serde_json;
+pub extern crate serde_yaml;
 
 
 pub extern crate suffix_rs;

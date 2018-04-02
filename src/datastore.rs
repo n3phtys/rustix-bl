@@ -102,6 +102,7 @@ pub struct Datastore {
 }
 
 
+
 impl SuffixTreeRebuildable for Datastore {
     fn rebuild_user_tree(&self) -> () {
         unimplemented!()
