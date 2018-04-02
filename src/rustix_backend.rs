@@ -260,16 +260,19 @@ impl WriteBackend for RustixBackend {
     fn snapshot(&mut self) -> Option<u64> {
         //only if persistence layer
         if !self.persistencer.config.use_persistence {
+            println!("snapshot() called, but not using persistence");
             return None;
         }
 
         //take path of dir: <path>/snapshot.json
         let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.json";
+        println!("snapshot() called, with file = {}", &filepath);
 
         //take current state and turn it into json
         match serde_json::to_string(&self.datastore) {
             Ok(json) => {
 
+                println!("snapshot() called, writing json = {}", &json);
                 //write to file
                 let mut file_res = std::fs::File::create(filepath);
                 match file_res {
@@ -278,16 +281,26 @@ impl WriteBackend for RustixBackend {
                         match res {
                             Ok(e) => {
                                 //if successful, return version of aggregate
+                                println!("Success on snapshot()");
                                 return Some(self.datastore.version);
                             },
-                            Err(e) => return None,
+                            Err(e) => {
+                                println!("Eror writing file on snapshot()");
+                                return None
+                            },
                         }
                     },
-                    Err(e) => return None,
+                    Err(e) => {
+                        println!("Error opening file on snapshot()");
+                        return None
+                    },
                 }
             },
             //if failure, return None
-            Err(e) => return None,
+            Err(e) => {
+                println!("Error creating json on snapshot()");
+                return None
+            },
         }
     }
     fn load_snapshot(&mut self) -> Option<u64> {
