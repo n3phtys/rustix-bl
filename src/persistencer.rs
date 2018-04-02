@@ -183,7 +183,7 @@ impl Persistencer for FilePersister {
             Some(ref lmdb) => {
                 //build and use iterator if database is non-empty
                 let count = lmdb.db_env.stat().unwrap().entries();
-                if (count > 0) {
+                if (count > counter) {
                     let tx = try!(lmdb.db_env.begin_ro_txn());
                     {
                         let mut cursor: RoCursor = try!(tx.open_ro_cursor(lmdb.db));
