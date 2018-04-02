@@ -269,13 +269,13 @@ impl WriteBackend for RustixBackend {
         let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.yaml";
         println!("snapshot() called, with file = {}", &filepath);
 
-        println!("datastore = {:?}", &self.datastore);
+        //println!("datastore = {:?}", &self.datastore);
 
         //take current state and turn it into json
         match serde_yaml::to_string(&self.datastore) {
             Ok(json) => {
 
-                println!("snapshot() called, writing json = {}", &json);
+                println!("snapshot() called, writing json");
                 //write to file
                 let mut file_res = std::fs::File::create(filepath);
                 match file_res {
