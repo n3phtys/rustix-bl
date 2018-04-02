@@ -164,8 +164,8 @@ impl Persistencer for FilePersister {
                     return false
                 },
                 Ok(t) => {
-                    println!("Success storing for {:?}", event);
                     datastore.version += 1u64;
+                    println!("Success storing for {:?} with new version #{}", event, datastore.version);
                     return event.apply(datastore, &self.config);
                 }
             }
