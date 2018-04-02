@@ -64,6 +64,12 @@ pub trait SuffixTreeRebuildable {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Datastore {
+
+    pub version: u64,
+    pub user_id_counter: u32,
+    pub freeby_id_counter: u64,
+    pub item_id_counter: u32,
+
     pub users: HashMap<u32, User>,
     pub users_suffix_tree: MockKDTree,
     pub items: HashMap<u32, Item>,
@@ -91,14 +97,9 @@ pub struct Datastore {
     // keeps categorized item pages
     // keeps per user item scoring tree
     // keeps per user item simplified bill (hashmap<name,hasmap<price,number>>)
-    pub user_id_counter: u32,
-    pub freeby_id_counter: u64,
-    pub item_id_counter: u32,
     pub categories: HashSet<String>,
 
 
-
-    pub version: u64,
 }
 
 

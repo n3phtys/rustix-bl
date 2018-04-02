@@ -203,6 +203,8 @@ impl Persistencer for FilePersister {
                             if event.can_be_applied(datastore) {
                                 event.apply(datastore, &self.config);
                                 datastore.version += 1u64;
+                            } else {
+                                println!("CARE: could not apply event {:?} to datastore state: {:?}", event, datastore);
                             }
                         }
                     }
