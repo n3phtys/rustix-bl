@@ -175,7 +175,7 @@ impl Persistencer for FilePersister {
     }
 
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u64, RustixError> {
-        let mut counter = datastore.version;
+        let counter = datastore.version;
 
         println!("Reloading events from lmdb with counter = {}", counter);
 
@@ -202,7 +202,7 @@ impl Persistencer for FilePersister {
                             let event: BLEvents = try!(serde_json::from_str(json));
                             if event.can_be_applied(datastore) {
                                 event.apply(datastore, &self.config);
-                                counter = counter + 1u64;
+                                datastore.version += 1u64;
                             }
                         }
                     }
@@ -211,7 +211,7 @@ impl Persistencer for FilePersister {
             None => (),
         }
 
-        return Ok(counter);
+        return Ok(datastore.version);
     }
 }
 
