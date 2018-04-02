@@ -268,7 +268,7 @@ impl WriteBackend for RustixBackend {
         let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.json";
         println!("snapshot() called, with file = {}", &filepath);
 
-        println("datastore = {:?}", &self.datastore);
+        println!("datastore = {:?}", &self.datastore);
 
         //take current state and turn it into json
         match serde_json::to_string(&self.datastore) {
