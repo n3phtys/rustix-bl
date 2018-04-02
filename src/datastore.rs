@@ -95,6 +95,10 @@ pub struct Datastore {
     pub freeby_id_counter: u64,
     pub item_id_counter: u32,
     pub categories: HashSet<String>,
+
+
+
+    pub version: u64,
 }
 
 
@@ -506,6 +510,7 @@ impl Default for Datastore {
             freeby_id_counter: 0,
             item_id_counter: 0,
             categories: HashSet::new(),
+            version: 0,
         };
     }
 }

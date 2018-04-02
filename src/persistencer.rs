@@ -89,7 +89,6 @@ pub struct LmdbDb {
 pub struct FilePersister {
     pub config: StaticConfig,
     pub lmdb: Option<LmdbDb>,
-    pub events_stored: u64,
 }
 
 impl FilePersister {
@@ -114,7 +113,6 @@ impl FilePersister {
         let mut fp = FilePersister {
             config: config,
             lmdb: lmdb,
-            events_stored: 0,
         };
 
         return Ok(fp);
@@ -124,8 +122,6 @@ impl FilePersister {
 
 pub trait LMDBPersistencer {
     fn store_event_in_db(&mut self, id: u64, event: &BLEvents) -> Result<(), RustixError>;
-    fn increment_counter(&mut self) -> ();
-    fn get_counter(&self) -> u64;
 }
 
 fn transform_u32_to_array_of_u8(x: u32) -> [u8; 4] {
@@ -149,16 +145,9 @@ impl LMDBPersistencer for FilePersister {
             }
             None => (),
         }
-        return Ok(self.increment_counter());
+        return Ok(());
     }
 
-
-    fn increment_counter(&mut self) -> () {
-        self.events_stored = self.events_stored + 1;
-    }
-    fn get_counter(&self) -> u64 {
-        return self.events_stored;
-    }
 }
 
 impl Persistencer for FilePersister {
@@ -166,7 +155,7 @@ impl Persistencer for FilePersister {
         let allowed = event.can_be_applied(datastore);
         println!("Result with allowed = {} for event: {:?}", allowed, event);
         if allowed {
-            let id: u64 = self.get_counter() + 1u64;
+            let id: u64 = datastore.version + 1u64;
             match self.store_event_in_db(id, event) {
                 Err(e) => {
                     println!("Failure storing for {:?}", event);
@@ -174,6 +163,7 @@ impl Persistencer for FilePersister {
                 },
                 Ok(t) => {
                     println!("Success storing for {:?}", event);
+                    datastore.version += 1u64;
                     return event.apply(datastore, &self.config);
                 }
             }
@@ -183,8 +173,7 @@ impl Persistencer for FilePersister {
     }
 
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u64, RustixError> {
-        let mut counter = self.get_counter();
-        //TODO: only check starting from store event counter (to deal with snapshots)
+        let mut counter = datastore.version;
 
         println!("Reloading events from lmdb with counter = {}", counter);
 
