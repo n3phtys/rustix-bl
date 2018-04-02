@@ -327,7 +327,7 @@ impl WriteBackend for RustixBackend {
 
         //extract datastore from json
         let ds_raw = serde_yaml::from_str(&contents);
-        if (ds_raw.is_err()) {
+        if ds_raw.is_err() {
             return None;
         }
         let ds: Datastore = ds_raw.unwrap();
