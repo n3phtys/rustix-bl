@@ -339,6 +339,7 @@ impl Event for BLEvents {
                 e.is_billed = *is_billed;
                 e.highlight_in_ui = *is_highlighted;
                 e.external_user_id = external_user_id.clone();
+                e.is_sepa = *is_sepa;
 
                 //if highlight_in_ui changed, update store.highlighted_users
                 if *is_highlighted {
