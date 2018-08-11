@@ -10,6 +10,8 @@ extern crate typescriptify;
 #[macro_use]
 pub extern crate derive_builder;
 pub extern crate lmdb;
+
+#![feature(inclusive_range_methods)]
 pub extern crate serde;
 pub extern crate serde_json;
 pub extern crate serde_yaml;
