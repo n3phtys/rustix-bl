@@ -31,6 +31,10 @@ pub trait Event {
     fn apply(&self, store: &mut Datastore, config: &StaticConfig) -> bool;
 }
 
+pub fn default_true() -> bool {
+    true
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum BLEvents {
     CreateItem {
@@ -39,7 +43,10 @@ pub enum BLEvents {
         category: Option<String>,
     },
     CreateUser { username: String },
-    UpdateUser { user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>},
+    UpdateUser { user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>,
+
+        #[serde(default = "default_true")]
+        is_sepa: bool,},
     UpdateItem {
         item_id: u32,
         itemname: String,
@@ -151,7 +158,7 @@ impl Event for BLEvents {
                 ref itemname,
                 ref price_cents,
                 ref category } => store.has_item(*item_id),
-            &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id } => store.has_user(*user_id),
+            &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id, ref is_sepa } => store.has_user(*user_id),
             &BLEvents::DeleteItem { item_id } => store.has_item(item_id),
             &BLEvents::DeleteUser { user_id } => store.has_user(user_id),
             &BLEvents::MakeSimplePurchase {
@@ -277,6 +284,7 @@ impl Event for BLEvents {
                         external_user_id: None,
                         user_id: id,
                         is_billed: true,
+                        is_sepa: true,
                         highlight_in_ui: false,
                         deleted: false,
                     },
@@ -325,7 +333,7 @@ impl Event for BLEvents {
 
                 true
             },
-            &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id } => {
+            &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id, ref is_sepa } => {
                 let mut e = store.users.get_mut(user_id).unwrap();
                 e.username = username.to_string();
                 e.is_billed = *is_billed;

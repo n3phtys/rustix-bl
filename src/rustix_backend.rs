@@ -40,7 +40,7 @@ pub trait WriteBackend {
     fn create_user(&mut self, username: String) -> bool;
     fn update_item(&mut self, item_id: u32, itemname: String, price_cents: u32, category: Option<String>)
                    -> bool;
-    fn update_user(&mut self, user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>) -> bool;
+    fn update_user(&mut self, user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>, is_sepa: bool) -> bool;
 
     fn delete_user(&mut self, user_id: u32) -> bool;
     fn delete_item(&mut self, item_id: u32) -> bool;
@@ -242,7 +242,7 @@ impl WriteBackend for RustixBackend {
         );
     }
 
-    fn update_user(&mut self, user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>) -> bool {
+    fn update_user(&mut self, user_id: u32, username: String, is_billed: bool, is_highlighted: bool, external_user_id: Option<String>, is_sepa: bool) -> bool {
         return self.persistencer.test_store_apply(
             &rustix_event_shop::BLEvents::UpdateUser {
                 user_id: user_id,
@@ -250,6 +250,7 @@ impl WriteBackend for RustixBackend {
                 is_billed: is_billed,
                 is_highlighted: is_highlighted,
                 external_user_id: external_user_id,
+                is_sepa: is_sepa,
             },
             &mut self.datastore,
         );
@@ -734,9 +735,9 @@ mod tests {
             12
         );
 
-        backend.update_user(0, "user a".to_string(), true, false, Some("user_id_external_a".to_string()));
-        backend.update_user(1, "user b".to_string(), false, false, None);
-        backend.update_user(2, "updated_donated_to_user".to_string(), true, false, Some("user_2_external_id".to_string()));
+        backend.update_user(0, "user a".to_string(), true, false, Some("user_id_external_a".to_string()), true);
+        backend.update_user(1, "user b".to_string(), false, false, None, false);
+        backend.update_user(2, "updated_donated_to_user".to_string(), true, false, Some("user_2_external_id".to_string()), true);
 
 
         assert_eq!(

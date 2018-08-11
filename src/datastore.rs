@@ -531,7 +531,7 @@ impl Default for UserGroup {
         return UserGroup::AllUsers;
     }
 }
-
+use rustix_event_shop::default_true;
 
 #[derive(Default, Debug, Serialize, Deserialize, PartialEq, TypeScriptify)]
 pub struct User {
@@ -539,6 +539,8 @@ pub struct User {
     pub external_user_id: Option<String>,
     pub user_id: u32,
     pub is_billed: bool,
+    #[serde(default="default_true")]
+    pub is_sepa: bool,
     pub highlight_in_ui: bool,
     pub deleted: bool,
 }
@@ -550,6 +552,7 @@ impl Clone for User {
             external_user_id: self.external_user_id.clone(),
             user_id: self.user_id,
             is_billed: self.is_billed,
+            is_sepa: self.is_sepa,
             highlight_in_ui: self.highlight_in_ui,
             deleted: self.deleted,
         };
