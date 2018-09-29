@@ -572,7 +572,7 @@ pub struct Item {
 
 
 
-#[derive(Debug, Serialize, Deserialize, Clone, TypeScriptify)]
+#[derive(Debug, Serialize, Deserialize, Clone, TypeScriptify, PartialEq)]
 pub enum BillState {
     Created,
     Finalized,
