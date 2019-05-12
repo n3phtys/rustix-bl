@@ -112,7 +112,7 @@ impl FilePersister {
         };
         println!("first part finished");
 
-        let mut fp = FilePersister {
+        let fp = FilePersister {
             config: config,
             lmdb: lmdb,
         };

@@ -66,7 +66,7 @@ pub fn build_transient_backend_with(
 }
 
 pub fn build_persistent_backend(dir: &std::path::Path) -> rustix_backend::RustixBackend {
-    let mut config = StaticConfig::default_persistence(dir.to_str().unwrap());
+    let config = StaticConfig::default_persistence(dir.to_str().unwrap());
 
     return rustix_backend::RustixBackend {
         datastore: datastore::Datastore::default(),

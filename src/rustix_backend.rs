@@ -316,7 +316,7 @@ impl WriteBackend for RustixBackend {
         //take <persistence_path>/snapshot.yaml and load it
         let filepath = self.persistencer.config.persistence_file_path.to_owned() + "/snapshot.yaml";
 
-        let mut file_raw= File::open(filepath);
+        let file_raw= File::open(filepath);
         if file_raw.is_err() {
             return None;
         }
