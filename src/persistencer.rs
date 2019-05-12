@@ -99,7 +99,7 @@ impl FilePersister {
             let dir: &std::path::Path = std::path::Path::new(&config.persistence_file_path);
             let db_flags: lmdb::DatabaseFlags = lmdb::DatabaseFlags::empty();
             println!("trying to get env");
-            let db_environment = try!(lmdb::Environment::new().set_max_dbs(1).open(&dir));
+            let db_environment = try!(lmdb::Environment::new().set_max_dbs(1).set_map_size(5242880000usize).open(&dir));
             println!("trying to get database");
             let database = try!(db_environment.create_db(None, db_flags));
             println!("gotten database");
@@ -160,7 +160,7 @@ impl Persistencer for FilePersister {
             let id: u64 = datastore.version + 1u64;
             match self.store_event_in_db(id, event) {
                 Err(e) => {
-                    println!("Failure storing for {:?}", event);
+                    println!("Failure storing for {:?} with error message {:?}" , event, e);
                     return false
                 },
                 Ok(t) => {
