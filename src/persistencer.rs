@@ -27,6 +27,7 @@ use std::fmt;
 use errors;
 use std::io::Cursor as IOCursor;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use std::fmt::Write;
 
 quick_error! {
     #[derive(Debug)]
@@ -79,6 +80,8 @@ pub trait Persistencer {
     //returns number of events loaded
     fn reload_from_filepath(&mut self, datastore: &mut Datastore) -> Result<u64, RustixError>;
     //fn initialize(&mut self, datastore: &mut Datastore) -> Result<u32, RustixError>;
+
+    fn load_into_string(&self) -> Result<String, RustixError>;
 }
 
 #[derive(Debug)]
@@ -149,7 +152,6 @@ impl LMDBPersistencer for FilePersister {
         }
         return Ok(());
     }
-
 }
 
 impl Persistencer for FilePersister {
@@ -160,9 +162,9 @@ impl Persistencer for FilePersister {
             let id: u64 = datastore.version + 1u64;
             match self.store_event_in_db(id, event) {
                 Err(e) => {
-                    println!("Failure storing for {:?} with error message {:?}" , event, e);
-                    return false
-                },
+                    println!("Failure storing for {:?} with error message {:?}", event, e);
+                    return false;
+                }
                 Ok(t) => {
                     datastore.version += 1u64;
                     println!("Success storing for {:?} with new version #{}", event, datastore.version);
@@ -214,6 +216,38 @@ impl Persistencer for FilePersister {
         }
 
         return Ok(datastore.version);
+    }
+
+    fn load_into_string(&self) -> Result<String, RustixError> {
+        println!("Loading full event store into new String...");
+
+
+        let mut res = String::new();
+
+
+        match self.lmdb {
+            Some(ref lmdb) => {
+                //build and use iterator if database is non-empty
+                let tx = try!(lmdb.db_env.begin_ro_txn());
+                {
+                    let mut cursor: RoCursor = try!(tx.open_ro_cursor(lmdb.db));
+
+                    let iter =   cursor.iter_start();
+
+                    for keyvalue in iter {
+                        let (key, value) = keyvalue;
+                        let id = key_to_id(key);
+                        let json = try!(str::from_utf8(value));
+                        write!(&mut res, "{}\n", json).unwrap();
+                    }
+                }
+            }
+            None => (),
+        }
+
+        println!("...Finished transfering to String");
+
+        return Ok(res);
     }
 }
 
