@@ -9,6 +9,7 @@ use suffix_rs::*;
 use suffix_rs::KDTree;
 use left_threaded_avl_tree::AVLTree;
 use typescriptify::TypeScriptifyTrait;
+use unidecode::unidecode;
 
 pub trait DatastoreQueries {
     fn get_purchase_timestamp(&self, purchase_id: u64) -> Option<i64>;
@@ -127,7 +128,8 @@ impl DatastoreQueries for Datastore {
 
     fn users_searchhit_ids(&self, searchterm: &str) -> Vec<u32> {
         let mut v : Vec<u32> = vec![];
-        let xs =  self.users_suffix_tree.search(searchterm);
+        let cleaned_searchterm = unidecode(searchterm);
+        let xs =  self.users_suffix_tree.search(&cleaned_searchterm);
         for x in xs {
             v.push(x.id);
         }

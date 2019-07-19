@@ -20,6 +20,8 @@ pub extern crate byteorder;
 
 pub extern crate suffix_rs;
 
+pub extern crate unidecode;
+
 pub extern crate bincode;
 #[macro_use]
 pub extern crate serde_derive;

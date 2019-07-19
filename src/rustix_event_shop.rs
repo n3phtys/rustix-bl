@@ -24,6 +24,7 @@ use datastore;
 use datastore::*;
 use suffix_rs::*;
 use datastore::PurchaseFunctions;
+use unidecode::unidecode;
 
 
 pub trait Event {
@@ -33,6 +34,29 @@ pub trait Event {
 
 pub fn default_true() -> bool {
     true
+}
+
+
+pub fn deunicodify(input: &Vec<datastore::User>) -> Vec<datastore::User> {
+
+    let output : Vec<datastore::User> =  input.into_iter().map(|x| {
+        let id : Option<String> = match &x.external_user_id {
+            Some(s) => {
+                Some(s.to_owned())
+            }
+            _ => None
+        };
+        datastore::User {
+            username: unidecode(&x.username),
+            external_user_id: id,
+            user_id: x.user_id,
+            is_billed: x.is_billed,
+            is_sepa: x.is_sepa,
+            highlight_in_ui: x.highlight_in_ui,
+            deleted: x.deleted
+        }
+    }).collect();
+    return output;
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -315,8 +339,7 @@ impl Event for BLEvents {
                     for (_, v) in &store.users {
                         users_vec.push(v.clone());
                     }
-
-                    store.users_suffix_tree = MockKDTree::build(&users_vec, false);
+                    store.users_suffix_tree = MockKDTree::build(&deunicodify(&users_vec), false);
                 }
 
 
@@ -334,18 +357,30 @@ impl Event for BLEvents {
                 true
             },
             &BLEvents::UpdateUser { ref user_id, ref username, ref is_billed, ref is_highlighted, ref external_user_id, ref is_sepa } => {
-                let mut e = store.users.get_mut(user_id).unwrap();
-                e.username = username.to_string();
-                e.is_billed = *is_billed;
-                e.highlight_in_ui = *is_highlighted;
-                e.external_user_id = external_user_id.clone();
-                e.is_sepa = *is_sepa;
+                {
+                    let mut e = store.users.get_mut(user_id).unwrap();
+                    e.username = username.to_string();
+                    e.is_billed = *is_billed;
+                    e.highlight_in_ui = *is_highlighted;
+                    e.external_user_id = external_user_id.clone();
+                    e.is_sepa = *is_sepa;
 
-                //if highlight_in_ui changed, update store.highlighted_users
-                if *is_highlighted {
-                    let _ = store.highlighted_users.insert(*user_id);
-                } else {
-                    let _ = store.highlighted_users.remove(user_id);
+                    //if highlight_in_ui changed, update store.highlighted_users
+                    if *is_highlighted {
+                        let _ = store.highlighted_users.insert(*user_id);
+                    } else {
+                        let _ = store.highlighted_users.remove(user_id);
+                    }
+                }
+
+
+                {
+                    let mut users_vec: Vec<datastore::User> = vec![];
+
+                    for (_, v) in &store.users {
+                        users_vec.push(v.clone());
+                    }
+                    store.users_suffix_tree = MockKDTree::build(&deunicodify(&users_vec), false);
                 }
 
                 true
@@ -455,7 +490,7 @@ impl Event for BLEvents {
                         }
                     }
 
-                    store.users_suffix_tree = MockKDTree::build(&users_vec, false);
+                    store.users_suffix_tree = MockKDTree::build(&deunicodify(&users_vec), false);
                 }
 
                 //remove from top users and renew topusers if that is the case
