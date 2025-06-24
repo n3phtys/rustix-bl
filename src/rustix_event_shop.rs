@@ -543,6 +543,7 @@ impl Event for BLEvents {
 
                 // increase user score
                 store.top_user_scores.increment_by_one(user_id);
+                store.last_millis_of_purchase_by_user.insert(user_id, timestamp);
 
                 // if not in top users, potentially extract new set
                 if !(store.top_users.contains(&user_id)) {
@@ -624,6 +625,7 @@ impl Event for BLEvents {
                 for x in specials {
                     v.push(BLEvents::MakeSpecialPurchase {user_id: *user_id, special_name: x.to_string(), timestamp: *timestamp});
                 }
+                store.last_millis_of_purchase_by_user.insert(*user_id, *timestamp);
 
                 let mut result = true;
                 for x in v {
